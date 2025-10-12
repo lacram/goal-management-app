@@ -1,0 +1,38 @@
+# 프로덕션 환경 설정 (Railway)
+spring:
+  # PostgreSQL 설정 - Railway 환경 변수 사용
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/goaldb}
+    driver-class-name: org.postgresql.Driver
+    username: ${PGUSER:goal_user}
+    password: ${PGPASSWORD:goal_password}
+    hikari:
+      maximum-pool-size: 5
+      connection-timeout: 30000
+  
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: update  # Railway 첫 배포 시 테이블 자동 생성
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          lob:
+            non_contextual_creation: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+# 로깅 설정
+logging:
+  level:
+    com.goalapp: INFO
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN
+
+# 서버 설정
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: always
+    include-stacktrace: never

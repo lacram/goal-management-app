@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cleanup.bat)",
+      "Bash(cmd:*)",
+      "Bash(dir)",
+      "Bash(powershell:*)",
+      "Bash(call cleanup.bat)",
+      "Bash(rm:*)",
+      "Bash(git config:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

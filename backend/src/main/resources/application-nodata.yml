@@ -1,0 +1,51 @@
+# 개발 환경 설정 (초기 데이터 없음)
+spring:
+  application:
+    name: goal-management-app
+  
+  # 데이터베이스 설정 (H2 인메모리 DB로 시작)
+  datasource:
+    url: jdbc:h2:mem:goaldb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  # H2 콘솔 설정
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    database-platform: org.hibernate.dialect.H2Dialect
+    defer-datasource-initialization: true
+  
+  # SQL 초기화 설정 (비활성화)
+  sql:
+    init:
+      mode: never  # 초기 데이터 로딩 비활성화
+  
+  # 로깅 설정
+logging:
+  level:
+    com.goalapp: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+
+# 서버 설정
+server:
+  port: 8080
+
+# 관리 엔드포인트 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

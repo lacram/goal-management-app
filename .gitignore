@@ -1,0 +1,51 @@
+# Project files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Build outputs
+build/
+target/
+*.jar
+*.war
+*.ear
+*.class
+
+# Gradle
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+
+# Logs
+logs/
+*.log
+*.log.*
+*.gz
+
+# Database
+data/
+*.db
+*.mv.db
+*.trace.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Environment
+.env
+.env.local

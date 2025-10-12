@@ -1,0 +1,75 @@
+# 개발 환경 설정
+spring:
+  application:
+    name: goal-management-app
+  
+  # 데이터베이스 설정 (H2 파일 기반 DB - 데이터 영속화)
+  datasource:
+    url: jdbc:h2:file:./data/goaldb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  # H2 콘솔 설정
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    # H2Dialect 자동 감지로 경고 제거
+    # database-platform: org.hibernate.dialect.H2Dialect
+    defer-datasource-initialization: true
+    # open-in-view 경고 제거
+    open-in-view: false
+  
+  # SQL 초기화 설정
+  sql:
+    init:
+      mode: never
+      data-locations: classpath:data.sql
+      encoding: UTF-8
+  
+  # HTTP 인코딩 설정
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  
+# 로깅 설정
+logging:
+  level:
+    com.goalapp: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.web.servlet.mvc.method.annotation: TRACE
+    org.springframework.web.cors: DEBUG
+    org.springframework.web.filter.CorsFilter: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    root: INFO
+  file:
+    name: logs/goal-management-app.log
+  pattern:
+    file: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
+    console: '%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
+
+# 서버 설정
+server:
+  port: 8080
+  address: 0.0.0.0  # 모든 네트워크 인터페이스에서 접근 허용
+
+# 관리 엔드포인트 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
