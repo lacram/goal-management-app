@@ -8,7 +8,11 @@
       "Bash(call cleanup.bat)",
       "Bash(rm:*)",
       "Bash(git config:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(./gradlew:*)"
     ],
     "deny": [],
     "ask": []

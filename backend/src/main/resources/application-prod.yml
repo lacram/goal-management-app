@@ -1,11 +1,10 @@
-# 프로덕션 환경 설정 (Railway)
+# 프로덕션 환경 설정 (Railway + Supabase)
 spring:
-  # PostgreSQL 설정 - Railway 환경 변수 사용
+  # Supabase PostgreSQL 설정
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/goaldb}
     driver-class-name: org.postgresql.Driver
-    username: ${PGUSER:goal_user}
-    password: ${PGPASSWORD:goal_password}
+    # Supabase는 URL에 인증 정보가 포함되어 있으므로 별도 username/password 불필요
     hikari:
       maximum-pool-size: 5
       connection-timeout: 30000
