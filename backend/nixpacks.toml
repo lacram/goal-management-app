@@ -1,3 +1,9 @@
+[variables]
+JAVA_VERSION = "21"
+
+[phases.setup]
+nixPkgs = ["openjdk21"]
+
 [phases.build]
 cmds = ["./gradlew clean build -x test"]
 
