@@ -2,5 +2,5 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "java -jar build/libs/*.jar"
+startCommand = "java -jar $(find build/libs -name '*.jar' ! -name '*plain*' | head -1)"
 restartPolicyType = "on_failure"
