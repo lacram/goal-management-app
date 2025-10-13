@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiEndpoints {
+  // 기본 프로덕션 URL (Railway)
+  static const String defaultProdBaseUrl = 'https://goal-management-app-production.up.railway.app/api';
   // 기본 개발용 URL
   static const String defaultDevBaseUrl = 'http://192.168.0.11:8080/api';
   
@@ -33,13 +35,13 @@ class ApiEndpoints {
   
   // 플랫폼별 기본 URL
   static String _getDefaultBaseUrl() {
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8080/api'; // Android 에뮬레이터
-    } else if (Platform.isIOS) {
-      return 'http://localhost:8080/api'; // iOS 시뮬레이터
-    } else {
-      return defaultDevBaseUrl; // 실제 기기
-    }
+    // 프로덕션 우선, 개발 환경에서 필요시 설정에서 변경 가능
+    return defaultProdBaseUrl; // Railway 프로덕션 서버
+    
+    // 개발용 (설정에서 수동 변경 가능):
+    // - Android 에뮬레이터: http://10.0.2.2:8080/api
+    // - iOS 시뮬레이터: http://localhost:8080/api  
+    // - 실제 기기: http://192.168.0.11:8080/api
   }
   
   // 동적으로 엔드포인트 생성
