@@ -8,4 +8,4 @@ nixPkgs = ["openjdk21"]
 cmds = ["./gradlew clean build -x test"]
 
 [start]
-cmd = "java -jar $(find build/libs -name '*.jar' ! -name '*plain*' | head -1)"
+cmd = "java -jar build/libs/*.jar"

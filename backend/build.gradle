@@ -8,6 +8,12 @@ plugins {
 group = 'com.goalapp'
 version = '1.0.0'
 
+// Plain JAR 생성 비활성화 (실행 가능한 JAR만 생성)
+jar {
+    enabled = false
+    archiveClassifier = ''
+}
+
 java {
     sourceCompatibility = '21'
 }
