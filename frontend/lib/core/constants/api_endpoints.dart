@@ -44,59 +44,33 @@ class ApiEndpoints {
     // - 실제 기기: http://192.168.0.11:8080/api
   }
   
-  // 동적으로 엔드포인트 생성
-  static Future<String> get goals async {
+  // 현재는 프로덕션 URL을 기본으로 사용 (빠른 빌드를 위해 동기적 처리)
+  // TODO: 설정 화면에서 URL 변경 기능을 구현할 때 비동기로 변경
+  static String get goals => '$defaultProdBaseUrl/goals';
+  
+  static String goalById(int id) => '$goals/$id';
+  
+  static String completeGoal(int id) => '$goals/$id/complete';
+  
+  static String uncompleteGoal(int id) => '$goals/$id/uncomplete';
+  
+  static String goalChildren(int id) => '$goals/$id/children';
+  
+  static String get todayGoals => '$goals/today';
+  
+  static String get activeGoals => '$goals/status/ACTIVE';
+  
+  static String get completedGoals => '$goals/status/COMPLETED';
+  
+  static String get rootGoals => '$goals/root';
+  
+  static String goalsByType(String type) => '$goals/type/$type';
+  
+  static String availableSubTypes(String parentType) => '$goals/types/$parentType/available-subtypes';
+  
+  // 비동기 버전들 (설정 화면에서 사용할 예정)
+  static Future<String> get goalsAsync async {
     final baseUrl = await getBaseUrl();
     return '$baseUrl/goals';
-  }
-  
-  static Future<String> goalById(int id) async {
-    final goalsUrl = await goals;
-    return '$goalsUrl/$id';
-  }
-  
-  static Future<String> completeGoal(int id) async {
-    final goalsUrl = await goals;
-    return '$goalsUrl/$id/complete';
-  }
-  
-  static Future<String> uncompleteGoal(int id) async {
-    final goalsUrl = await goals;
-    return '$goalsUrl/$id/uncomplete';
-  }
-  
-  static Future<String> goalChildren(int id) async {
-    final goalsUrl = await goals;
-    return '$goalsUrl/$id/children';
-  }
-  
-  static Future<String> get todayGoals async {
-    final goalsUrl = await goals;
-    return '$goalsUrl/today';
-  }
-  
-  static Future<String> get activeGoals async {
-    final goalsUrl = await goals;
-    return '$goalsUrl/status/ACTIVE';
-  }
-  
-  static Future<String> get completedGoals async {
-    final goalsUrl = await goals;
-    return '$goalsUrl/status/COMPLETED';
-  }
-  
-  static Future<String> get rootGoals async {
-    final goalsUrl = await goals;
-    return '$goalsUrl/root';
-  }
-  
-  static Future<String> goalsByType(String type) async {
-    final goalsUrl = await goals;
-    return '$goalsUrl/type/$type';
-  }
-  
-  static Future<String> availableSubTypes(String parentType) async {
-    final goalsUrl = await goals;
-    return '$goalsUrl/types/$parentType/available-subtypes';
   }
 }
