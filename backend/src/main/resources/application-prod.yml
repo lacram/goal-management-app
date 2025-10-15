@@ -7,8 +7,13 @@ spring:
     password: J8qih0ZWIvnLINZW
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 5
-      connection-timeout: 30000
+      # Supabase 무료 플랜 연결 제한 대응 - 최소한의 연결만 유지
+      maximum-pool-size: 2          # 최대 2개 연결 (무료 플랜 안정성)
+      minimum-idle: 1               # 최소 1개 유휴 연결 유지
+      connection-timeout: 20000     # 연결 대기 시간 20초
+      idle-timeout: 300000          # 유휴 연결 5분 후 제거
+      max-lifetime: 600000          # 연결 최대 수명 10분
+      leak-detection-threshold: 60000  # 연결 누수 감지 1분
   
   # JPA 설정
   jpa:
