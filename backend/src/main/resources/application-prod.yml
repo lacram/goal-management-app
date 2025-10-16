@@ -1,20 +1,25 @@
 # 프로덕션 환경 설정 (Railway + Supabase)
 spring:
-  # Supabase PostgreSQL 설정 - Transaction Pooler 사용
+  # Supabase PostgreSQL 설정 - Session Pooler로 변경 (안정성 향상)
   datasource:
-    url: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require
+    url: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require
     username: postgres.porszbvzgosxurnhrchp
     password: J8qih0ZWIvnLINZW
     driver-class-name: org.postgresql.Driver
     hikari:
-      # Supabase 무료 플랜 연결 제한 대응 - 최소한의 연결만 유지
-      maximum-pool-size: 2          # 최대 2개 연결 (무료 플랜 안정성)
-      minimum-idle: 1               # 최소 1개 유휴 연결 유지
-      connection-timeout: 20000     # 연결 대기 시간 20초
-      idle-timeout: 300000          # 유휴 연결 5분 후 제거
-      max-lifetime: 600000          # 연결 최대 수명 10분
+      # Supabase 무료 플랜 안정성 - 단일 연결 사용
+      maximum-pool-size: 1          # 최소 1개 연결 (무료 플랜 최대 안정성)
+      minimum-idle: 1               # 항상 1개 연결 유지
+      connection-timeout: 30000     # 연결 대기 30초
+      idle-timeout: 600000          # 유휴 연결 10분 후 제거
+      max-lifetime: 1800000         # 연결 최대 수명 30분
       leak-detection-threshold: 60000  # 연결 누수 감지 1분
-  
+
+  # H2 Console 비활성화 (Production)
+  h2:
+    console:
+      enabled: false
+
   # JPA 설정
   jpa:
     hibernate:
