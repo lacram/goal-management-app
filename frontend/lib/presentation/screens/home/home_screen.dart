@@ -25,6 +25,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _fabController;
   late Animation<double> _fabScaleAnimation;
+  GoalCardDisplayMode _displayMode = GoalCardDisplayMode.normal;
+  bool _showRootGoalsOnly = true; // 최상위 목표만 보기
+  final Set<int> _expandedGoalIds = {}; // 확장된 목표 ID 집합
 
   @override
   void initState() {
@@ -86,6 +89,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         elevation: 0,
         actions: [
           FadeInWidget(
+            delay: const Duration(milliseconds: 300),
+            child: IconButton(
+              icon: const Icon(Icons.view_agenda),
+              tooltip: '표시 모드',
+              onPressed: _showDisplayModeSelector,
+            ),
+          ),
+          FadeInWidget(
             delay: const Duration(milliseconds: 400),
             child: IconButton(
               icon: const Icon(Icons.settings),
@@ -118,20 +129,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.all(AppSizes.paddingMedium),
               child: StaggeredListAnimation(
                 children: [
-                  // 인사말 섹션
-                  _buildGreetingSection(),
+                  // 빠른 액션 섹션
+                  _buildQuickActionsSection(),
                   const SizedBox(height: AppSizes.paddingLarge),
 
                   // 오늘의 목표 섹션
                   _buildTodayGoalsSection(goalProvider),
                   const SizedBox(height: AppSizes.paddingLarge),
 
-                  // 진행률 요약 섹션
-                  _buildProgressSummarySection(goalProvider),
+                  // 전체 목표 섹션
+                  _buildAllGoalsSection(goalProvider),
                   const SizedBox(height: AppSizes.paddingLarge),
 
-                  // 빠른 액션 섹션
-                  _buildQuickActionsSection(),
+                  // 진행률 요약 섹션
+                  _buildProgressSummarySection(goalProvider),
                 ],
               ),
             ),
@@ -151,63 +162,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             }
           },
           child: const Icon(Icons.add),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGreetingSection() {
-    final now = DateTime.now();
-    final hour = now.hour;
-    String greeting;
-    String emoji;
-
-    if (hour < 12) {
-      greeting = '좋은 아침이에요!';
-      emoji = '☀️';
-    } else if (hour < 18) {
-      greeting = '좋은 오후에요!';
-      emoji = '🌤️';
-    } else {
-      greeting = '좋은 저녁이에요!';
-      emoji = '🌙';
-    }
-
-    return AnimatedGoalCard(
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSizes.paddingLarge),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      greeting,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  BounceInWidget(
-                    delay: const Duration(milliseconds: 600),
-                    child: Text(
-                      emoji,
-                      style: const TextStyle(fontSize: 32),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSizes.paddingSmall),
-              Text(
-                '오늘도 목표를 향해 한 걸음씩 나아가세요!',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondaryColor,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -308,6 +262,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             staggerDelay: const Duration(milliseconds: 100),
             children: activeGoals.map((goal) => GoalCard(
               goal: goal,
+              displayMode: _displayMode,
               onTap: () {
                 Navigator.of(context).pushWithSlideAndFade(
                   GoalDetailScreen(goal: goal),
@@ -323,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 final result = await Navigator.of(context).pushWithSlideFromRight(
                   CreateGoalScreen(editGoal: goal),
                 );
-                
+
                 if (result == true) {
                   _loadInitialData();
                 }
@@ -366,6 +321,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               opacity: 0.7,
               child: GoalCard(
                 goal: goal,
+                displayMode: _displayMode,
                 onTap: () {
                   Navigator.of(context).pushWithSlideAndFade(
                     GoalDetailScreen(goal: goal),
@@ -381,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   final result = await Navigator.of(context).pushWithSlideFromRight(
                     CreateGoalScreen(editGoal: goal),
                   );
-                  
+
                   if (result == true) {
                     _loadInitialData();
                   }
@@ -391,6 +347,321 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildAllGoalsSection(GoalProvider goalProvider) {
+    final allActiveGoals = goalProvider.activeGoals;
+    final rootGoals = allActiveGoals.where((goal) => goal.parentGoalId == null).toList();
+    final displayGoals = _showRootGoalsOnly ? rootGoals : allActiveGoals;
+    final displayLimit = 5;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '전체 목표',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Row(
+              children: [
+                // 토글 버튼
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.dividerColor.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildToggleButton(
+                        '최상위',
+                        _showRootGoalsOnly,
+                        () => setState(() => _showRootGoalsOnly = true),
+                      ),
+                      _buildToggleButton(
+                        '전체',
+                        !_showRootGoalsOnly,
+                        () => setState(() => _showRootGoalsOnly = false),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSizes.paddingSmall),
+                // 개수 표시
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.paddingMedium,
+                    vertical: AppSizes.paddingSmall,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.activeColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+                  ),
+                  child: Text(
+                    '${displayGoals.length}개',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.activeColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.paddingMedium),
+
+        if (displayGoals.isEmpty)
+          FadeInWidget(
+            delay: const Duration(milliseconds: 400),
+            child: AnimatedGoalCard(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.paddingLarge),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.task_alt,
+                          size: 48,
+                          color: AppColors.textSecondaryColor,
+                        ),
+                        const SizedBox(height: AppSizes.paddingMedium),
+                        Text(
+                          _showRootGoalsOnly ? '최상위 목표가 없습니다' : '활성 목표가 없습니다',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: AppSizes.paddingSmall),
+                        Text(
+                          '새로운 목표를 추가해보세요!',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textSecondaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+        if (displayGoals.isNotEmpty)
+          _showRootGoalsOnly
+              ? _buildHierarchicalGoals(displayGoals.take(displayLimit).toList(), goalProvider)
+              : StaggeredListAnimation(
+                  staggerDelay: const Duration(milliseconds: 100),
+                  children: displayGoals.take(displayLimit).map((goal) => GoalCard(
+                    goal: goal,
+                    displayMode: _displayMode,
+                    onTap: () {
+                      Navigator.of(context).pushWithSlideAndFade(
+                        GoalDetailScreen(goal: goal),
+                      );
+                    },
+                    onCompleteToggle: (goal) async {
+                      final success = await goalProvider.completeGoal(goal.id!);
+                      if (success) {
+                        await goalProvider.loadActiveGoals();
+                        await goalProvider.loadTodayGoals();
+                      }
+                    },
+                    onEdit: () async {
+                      final result = await Navigator.of(context).pushWithSlideFromRight(
+                        CreateGoalScreen(editGoal: goal),
+                      );
+
+                      if (result == true) {
+                        _loadInitialData();
+                      }
+                    },
+                  )).toList(),
+                ),
+
+        if (displayGoals.length > displayLimit) ...[
+          const SizedBox(height: AppSizes.paddingMedium),
+          Center(
+            child: TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).pushWithSlideFromRight(
+                  const GoalListScreen(),
+                );
+              },
+              icon: const Icon(Icons.arrow_forward),
+              label: Text('전체 목표 보기 (${displayGoals.length - displayLimit}개 더)'),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildToggleButton(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 6,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primaryColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: isSelected ? Colors.white : AppColors.textSecondaryColor,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHierarchicalGoals(List<Goal> rootGoals, GoalProvider goalProvider) {
+    return Column(
+      children: rootGoals.map((rootGoal) {
+        final isExpanded = _expandedGoalIds.contains(rootGoal.id);
+        final hasSubGoals = rootGoal.subGoals.isNotEmpty;
+
+        return Column(
+          children: [
+            // 최상위 목표 (확장/축소 버튼 포함)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 확장/축소 버튼 (하위 목표가 있을 때만)
+                if (hasSubGoals)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, right: 4),
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          if (isExpanded) {
+                            _expandedGoalIds.remove(rootGoal.id);
+                          } else {
+                            _expandedGoalIds.add(rootGoal.id!);
+                          }
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(4),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Icon(
+                          isExpanded ? Icons.expand_more : Icons.chevron_right,
+                          size: 20,
+                          color: AppColors.primaryColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                // 목표 카드
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      right: AppSizes.paddingMedium,
+                    ),
+                    child: GoalCard(
+                      goal: rootGoal,
+                      displayMode: _displayMode,
+                      enableAnimation: false, // 계층형 뷰에서는 애니메이션 비활성화
+                      margin: const EdgeInsets.only(
+                        top: AppSizes.paddingSmall,
+                        bottom: AppSizes.paddingSmall,
+                      ),
+                      onTap: () {
+                        Navigator.of(context).pushWithSlideAndFade(
+                          GoalDetailScreen(goal: rootGoal),
+                        );
+                      },
+                      onCompleteToggle: (goal) async {
+                        final success = await goalProvider.completeGoal(goal.id!);
+                        if (success) {
+                          await goalProvider.loadActiveGoals();
+                          await goalProvider.loadTodayGoals();
+                        }
+                      },
+                      onEdit: () async {
+                        final result = await Navigator.of(context).pushWithSlideFromRight(
+                          CreateGoalScreen(editGoal: rootGoal),
+                        );
+
+                        if (result == true) {
+                          _loadInitialData();
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // 하위 목표들 (확장된 경우에만 표시)
+            if (hasSubGoals && isExpanded) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: AppSizes.paddingLarge * 1.5),
+                child: Column(
+                  children: rootGoal.subGoals.take(3).map((subGoal) {
+                    return GoalCard(
+                      goal: subGoal,
+                      displayMode: _displayMode,
+                      enableAnimation: false, // 계층형 뷰에서는 애니메이션 비활성화
+                      isSubGoal: true,
+                      onTap: () {
+                        Navigator.of(context).pushWithSlideAndFade(
+                          GoalDetailScreen(goal: subGoal),
+                        );
+                      },
+                      onCompleteToggle: (goal) async {
+                        final success = await goalProvider.completeGoal(goal.id!);
+                        if (success) {
+                          await goalProvider.loadActiveGoals();
+                          await goalProvider.loadTodayGoals();
+                        }
+                      },
+                      onEdit: () async {
+                        final result = await Navigator.of(context).pushWithSlideFromRight(
+                          CreateGoalScreen(editGoal: subGoal),
+                        );
+
+                        if (result == true) {
+                          _loadInitialData();
+                        }
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+              if (rootGoal.subGoals.length > 3)
+                Padding(
+                  padding: const EdgeInsets.only(left: AppSizes.paddingLarge * 1.5),
+                  child: TextButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pushWithSlideAndFade(
+                        GoalDetailScreen(goal: rootGoal),
+                      );
+                    },
+                    icon: const Icon(Icons.arrow_forward, size: 16),
+                    label: Text('하위 목표 ${rootGoal.subGoals.length - 3}개 더 보기'),
+                    style: TextButton.styleFrom(
+                      textStyle: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ),
+            ],
+          ],
+        );
+      }).toList(),
     );
   }
 
@@ -519,18 +790,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            const SizedBox(width: AppSizes.paddingMedium),
+            const SizedBox(width: AppSizes.paddingSmall),
             Expanded(
               child: ScaleInWidget(
-                delay: const Duration(milliseconds: 400),
+                delay: const Duration(milliseconds: 300),
                 child: _buildQuickActionCard(
-                  '진행중 목표',
+                  '진행중',
                   Icons.play_arrow,
                   AppColors.warningColor,
                   () async {
                     final goalProvider = context.read<GoalProvider>();
                     await goalProvider.loadActiveGoals();
-                    
+
                     if (context.mounted) {
                       Navigator.of(context).pushWithSlideFromRight(
                         const GoalListScreen(initialTabIndex: 1), // 진행중 탭
@@ -540,22 +811,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: AppSizes.paddingMedium),
-        Row(
-          children: [
+            const SizedBox(width: AppSizes.paddingSmall),
             Expanded(
               child: ScaleInWidget(
-                delay: const Duration(milliseconds: 600),
+                delay: const Duration(milliseconds: 400),
                 child: _buildQuickActionCard(
-                  '완료된 목표',
+                  '완료됨',
                   Icons.check_circle,
                   AppColors.successColor,
                   () async {
                     final goalProvider = context.read<GoalProvider>();
                     await goalProvider.loadCompletedGoals();
-                    
+
                     if (context.mounted) {
                       Navigator.of(context).pushWithSlideFromRight(
                         const GoalListScreen(initialTabIndex: 2), // 완료 탭
@@ -565,12 +832,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            const SizedBox(width: AppSizes.paddingMedium),
+            const SizedBox(width: AppSizes.paddingSmall),
             Expanded(
               child: ScaleInWidget(
-                delay: const Duration(milliseconds: 800),
+                delay: const Duration(milliseconds: 500),
                 child: _buildQuickActionCard(
-                  '통계 대시보드',
+                  '통계',
                   Icons.analytics,
                   AppColors.infoColor,
                   () {
@@ -597,8 +864,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       onTap: onTap,
       child: Card(
         child: Padding(
-          padding: const EdgeInsets.all(AppSizes.paddingLarge),
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSizes.paddingMedium,
+            horizontal: AppSizes.paddingSmall,
+          ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               PulseAnimation(
                 duration: const Duration(seconds: 2),
@@ -606,20 +877,164 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 maxScale: 1.05,
                 child: Icon(
                   icon,
-                  size: AppSizes.iconLarge,
+                  size: 28,
                   color: color,
                 ),
               ),
-              const SizedBox(height: AppSizes.paddingSmall),
+              const SizedBox(height: 6),
               Text(
                 title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showDisplayModeSelector() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: SingleChildScrollView(
+          child: Container(
+            padding: const EdgeInsets.all(AppSizes.paddingLarge),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '목표 표시 모드',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSizes.paddingSmall),
+                Text(
+                  '원하는 표시 모드를 선택하여 미리 확인해보세요',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondaryColor,
+                  ),
+                ),
+                const SizedBox(height: AppSizes.paddingMedium),
+
+                _buildModeOption(
+                  '일반 모드',
+                  '기본 스타일 - 모든 정보 표시',
+                  Icons.view_headline,
+                  GoalCardDisplayMode.normal,
+                  _displayMode == GoalCardDisplayMode.normal,
+                ),
+                _buildModeOption(
+                  '컴팩트 모드',
+                  '한 줄 표시 - 가장 작은 공간 차지',
+                  Icons.view_stream,
+                  GoalCardDisplayMode.compact,
+                  _displayMode == GoalCardDisplayMode.compact,
+                ),
+                _buildModeOption(
+                  '리스트 모드',
+                  '리스트 스타일 - 경계선 구분',
+                  Icons.view_list,
+                  GoalCardDisplayMode.list,
+                  _displayMode == GoalCardDisplayMode.list,
+                ),
+                _buildModeOption(
+                  '미니멀 모드',
+                  '간소화 - 설명/진행률 제외',
+                  Icons.view_agenda,
+                  GoalCardDisplayMode.minimal,
+                  _displayMode == GoalCardDisplayMode.minimal,
+                ),
+
+                const SizedBox(height: AppSizes.paddingSmall),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModeOption(
+    String title,
+    String description,
+    IconData icon,
+    GoalCardDisplayMode mode,
+    bool isSelected,
+  ) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _displayMode = mode;
+        });
+        Navigator.pop(context);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSizes.paddingSmall),
+        padding: const EdgeInsets.all(AppSizes.paddingMedium),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryColor.withOpacity(0.1)
+              : Colors.transparent,
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primaryColor
+                : AppColors.dividerColor,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected
+                  ? AppColors.primaryColor
+                  : AppColors.textSecondaryColor,
+              size: 28,
+            ),
+            const SizedBox(width: AppSizes.paddingMedium),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? AppColors.primaryColor
+                          : AppColors.textPrimaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(
+                Icons.check_circle,
+                color: AppColors.primaryColor,
+                size: 24,
+              ),
+          ],
         ),
       ),
     );
