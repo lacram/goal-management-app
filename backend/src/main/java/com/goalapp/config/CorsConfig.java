@@ -17,11 +17,7 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins(
-                    "https://goal-management-app-production.up.railway.app",
-                    "http://localhost:*", // Flutter 개발용
-                    "http://192.168.*:*" // 로컬 네트워크 테스트용
-                )
+                .allowedOriginPatterns("*") // 모든 origin 허용 (Flutter 데스크톱 앱 지원)
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD")
                 .allowedHeaders("*")
                 .allowCredentials(true)
@@ -31,26 +27,22 @@ public class CorsConfig implements WebMvcConfigurer {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
-        // 프로덕션 환경: 특정 도메인만 허용
-        configuration.setAllowedOrigins(Arrays.asList(
-            "https://goal-management-app-production.up.railway.app",
-            "http://localhost:8080",
-            "http://localhost:3000",
-            "http://192.168.0.11:*" // 사용자 로컬 IP
-        ));
-        
+
+        // 모든 origin 허용 (개발 및 Flutter 데스크톱 앱 지원)
+        // TODO: 프로덕션에서는 특정 도메인으로 제한 필요
+        configuration.setAllowedOriginPatterns(Collections.singletonList("*"));
+
         configuration.setAllowedMethods(Arrays.asList(
             "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"
         ));
-        
+
         configuration.setAllowedHeaders(Collections.singletonList("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(86400L);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-        
+
         return source;
     }
 }
