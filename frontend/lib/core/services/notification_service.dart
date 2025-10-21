@@ -1,7 +1,6 @@
 // import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
 // import 'package:timezone/timezone.dart' as tz;
-import '../constants/app_constants.dart';
 import '../../data/models/goal.dart';
 
 /// 알림 서비스 (임시 비활성화 - 빌드 이슈 해결 후 재활성화 예정)

@@ -118,9 +118,24 @@ class AppStrings {
   static const String delete = '삭제';
   static const String complete = '완료';
   static const String uncomplete = '완료 취소';
-  
+
   // Status
   static const String loading = '로딩 중...';
   static const String noData = '데이터가 없습니다';
   static const String error = '오류가 발생했습니다';
+
+  // Routines
+  static const String routinesTab = '루틴';
+  static const String routines = '루틴';
+  static const String allRoutines = '전체 루틴';
+  static const String todayRoutines = '오늘의 루틴';
+  static const String addNewRoutine = '새 루틴 추가';
+  static const String routineTitle = '루틴 제목';
+  static const String routineDescription = '루틴 메모';
+  static const String routineFrequency = '반복 주기';
+  static const String dailyRoutine = '매일';
+  static const String weeklyRoutine = '주간';
+  static const String monthlyRoutine = '월간';
+  static const String completedRoutines = '완료한 루틴';
+  static const String routineHistory = '완료 히스토리';
 }

@@ -9,6 +9,7 @@ class GoalTreeView extends StatefulWidget {
   final Function(Goal)? onCompleteToggle;
   final Function(Goal)? onEdit;
   final Function(Goal)? onDelete;
+  final GoalCardDisplayMode displayMode;
 
   const GoalTreeView({
     super.key,
@@ -17,6 +18,7 @@ class GoalTreeView extends StatefulWidget {
     this.onCompleteToggle,
     this.onEdit,
     this.onDelete,
+    this.displayMode = GoalCardDisplayMode.compact,
   });
 
   @override
@@ -95,6 +97,8 @@ class _GoalTreeViewState extends State<GoalTreeView> {
               Expanded(
                 child: GoalCard(
                   goal: goal,
+                  displayMode: widget.displayMode,
+                  enableAnimation: false, // 트리 뷰에서는 애니메이션 비활성화
                   onTap: widget.onTap != null ? () => widget.onTap!(goal) : null,
                   onCompleteToggle: widget.onCompleteToggle,
                   onEdit: widget.onEdit != null ? () => widget.onEdit!(goal) : null,

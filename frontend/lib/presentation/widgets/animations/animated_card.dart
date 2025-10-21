@@ -105,7 +105,7 @@ class _AnimatedGoalCardState extends State<AnimatedGoalCard>
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withOpacity(0.1), // 0.1에서 0.03으로 변경 (더 은은하게)
                     blurRadius: _elevationAnimation.value,
                     offset: Offset(0, _elevationAnimation.value / 2),
                   ),

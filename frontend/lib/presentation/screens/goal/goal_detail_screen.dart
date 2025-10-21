@@ -4,7 +4,6 @@ import '../../../core/constants/app_constants.dart';
 import '../../../data/providers/goal_provider.dart';
 import '../../../data/models/goal.dart';
 import '../../widgets/common/loading_widget.dart';
-import '../../widgets/common/error_widget.dart';
 import '../../widgets/goal_widgets/goal_card.dart';
 import '../goal/create_goal_screen.dart';
 
@@ -282,7 +281,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
   }
 
   Widget _buildProgressCard() {
-    final progressPercent = _currentGoal.getProgressPercentage() / 100;
+    final progressPercent = _currentGoal.progressPercentage / 100;
     
     return Card(
       child: Padding(
@@ -544,6 +543,10 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         return AppColors.primaryColor;
       case GoalStatus.completed:
         return AppColors.successColor;
+      case GoalStatus.expired:
+        return AppColors.errorColor;
+      case GoalStatus.archived:
+        return const Color(0xFF6B7280); // Gray
       case GoalStatus.failed:
         return AppColors.errorColor;
       case GoalStatus.postponed:

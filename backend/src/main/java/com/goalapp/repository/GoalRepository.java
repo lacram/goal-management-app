@@ -47,7 +47,7 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     @Query("SELECT g FROM Goal g WHERE g.parentGoal.id = :parentGoalId")
     List<Goal> findByParentGoalId(@Param("parentGoalId") Long parentGoalId);
     
-    // 상태별 목표 개수 조회
+    // 상태별 목표 개수 조회 - EntityGraph 불필요
     long countByStatus(GoalStatus status);
     
     // 마감일이 지난 미완료 목표들 조회
@@ -74,12 +74,10 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     @EntityGraph(attributePaths = {"subGoals"})
     List<Goal> findAllByOrderByPriorityDesc();
     
-    // 알림이 활성화된 목표들 조회
-    @EntityGraph(attributePaths = {"subGoals"})
+    // 알림이 활성화된 목표들 조회 - 필요시에만 EntityGraph 사용
     List<Goal> findByReminderEnabledTrue();
     
-    // 알림이 비활성화된 목표들 조회
-    @EntityGraph(attributePaths = {"subGoals"})
+    // 알림이 비활성화된 목표들 조회 - 필요시에만 EntityGraph 사용
     List<Goal> findByReminderEnabledFalse();
     
     // 제목으로 목표 검색
@@ -108,9 +106,25 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     @EntityGraph(attributePaths = {"subGoals"})
     List<Goal> findByPriorityGreaterThanEqual(Integer priority);
     
-    // 특정 기간에 완료된 목표들 조회
-    @EntityGraph(attributePaths = {"subGoals"})
+    // 특정 기간에 완료된 목표들 조회 - 단순 목록에는 EntityGraph 불필요
     @Query("SELECT g FROM Goal g WHERE g.status = 'COMPLETED' AND g.completedAt BETWEEN :startDate AND :endDate")
     List<Goal> findCompletedGoalsBetween(@Param("startDate") LocalDateTime startDate,
                                         @Param("endDate") LocalDateTime endDate);
+
+    // ===== 만료 관련 쿼리 메서드 =====
+
+    // 만료된 목표 조회 (ACTIVE 상태이면서 dueDate가 과거인 목표)
+    @EntityGraph(attributePaths = {"subGoals"})
+    @Query("SELECT g FROM Goal g WHERE g.dueDate < :now AND g.status = 'ACTIVE' AND g.isCompleted = false")
+    List<Goal> findExpiredGoals(@Param("now") LocalDateTime now);
+
+    // 만료 임박 목표 조회 (특정 시간 범위 내)
+    @EntityGraph(attributePaths = {"subGoals"})
+    @Query("SELECT g FROM Goal g WHERE g.dueDate > :now AND g.dueDate <= :threshold AND g.status = 'ACTIVE' AND g.isCompleted = false")
+    List<Goal> findExpiringSoonGoals(@Param("now") LocalDateTime now, @Param("threshold") LocalDateTime threshold);
+
+    // EXPIRED 상태이고 일정 시간 경과한 목표 조회 (자동 보관 대상)
+    @EntityGraph(attributePaths = {"subGoals"})
+    @Query("SELECT g FROM Goal g WHERE g.status = 'EXPIRED' AND g.updatedAt < :archiveThreshold")
+    List<Goal> findExpiredGoalsForArchiving(@Param("archiveThreshold") LocalDateTime archiveThreshold);
 }

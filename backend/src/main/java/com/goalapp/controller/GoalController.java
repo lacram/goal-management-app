@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.HashMap;
 import java.util.List;
@@ -191,14 +190,6 @@ public class GoalController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * OPTIONS 요청 명시적 처리 (CORS preflight)
-     */
-    @RequestMapping(method = RequestMethod.OPTIONS)
-    public ResponseEntity<Void> handleOptions() {
-        log.debug("Handling OPTIONS request for CORS preflight");
-        return ResponseEntity.ok().build();
-    }
 
     /**
      * 목표 완료 처리
@@ -218,5 +209,79 @@ public class GoalController {
         log.info("Uncompleting goal: {}", goalId);
         Goal uncompletedGoal = goalService.uncompleteGoal(goalId);
         return ResponseEntity.ok(GoalResponse.fromWithoutSubGoals(uncompletedGoal));
+    }
+
+    // ===== 만료 관련 API =====
+
+    /**
+     * 만료된 목표들 조회
+     */
+    @GetMapping("/expired")
+    public ResponseEntity<List<GoalResponse>> getExpiredGoals() {
+        List<Goal> expiredGoals = goalService.getExpiredGoals();
+        List<GoalResponse> responses = expiredGoals.stream()
+                .map(GoalResponse::from)
+                .toList();
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * 만료 임박 목표들 조회
+     * @param hours 만료 몇 시간 전까지의 목표를 조회할지 (기본: 24시간)
+     */
+    @GetMapping("/expiring-soon")
+    public ResponseEntity<List<GoalResponse>> getExpiringSoonGoals(
+            @RequestParam(defaultValue = "24") int hours) {
+        List<Goal> expiringSoon = goalService.getExpiringSoonGoals(hours);
+        List<GoalResponse> responses = expiringSoon.stream()
+                .map(GoalResponse::from)
+                .toList();
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * 보관된 목표들 조회
+     */
+    @GetMapping("/archived")
+    public ResponseEntity<List<GoalResponse>> getArchivedGoals() {
+        List<Goal> archivedGoals = goalService.getArchivedGoals();
+        List<GoalResponse> responses = archivedGoals.stream()
+                .map(GoalResponse::from)
+                .toList();
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * 목표 수동 만료 처리
+     */
+    @PostMapping("/{goalId}/expire")
+    public ResponseEntity<GoalResponse> expireGoal(@PathVariable Long goalId) {
+        log.info("Expiring goal: {}", goalId);
+        Goal expiredGoal = goalService.expireGoal(goalId);
+        return ResponseEntity.ok(GoalResponse.fromWithoutSubGoals(expiredGoal));
+    }
+
+    /**
+     * 목표 보관 처리
+     */
+    @PostMapping("/{goalId}/archive")
+    public ResponseEntity<GoalResponse> archiveGoal(@PathVariable Long goalId) {
+        log.info("Archiving goal: {}", goalId);
+        Goal archivedGoal = goalService.archiveGoal(goalId);
+        return ResponseEntity.ok(GoalResponse.fromWithoutSubGoals(archivedGoal));
+    }
+
+    /**
+     * 목표 기간 연장
+     * @param goalId 목표 ID
+     * @param days 연장할 일수
+     */
+    @PostMapping("/{goalId}/extend")
+    public ResponseEntity<GoalResponse> extendGoalDueDate(
+            @PathVariable Long goalId,
+            @RequestParam int days) {
+        log.info("Extending goal due date: {} by {} days", goalId, days);
+        Goal extendedGoal = goalService.extendGoalDueDate(goalId, days);
+        return ResponseEntity.ok(GoalResponse.fromWithoutSubGoals(extendedGoal));
     }
 }

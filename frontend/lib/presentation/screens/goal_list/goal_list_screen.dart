@@ -26,6 +26,7 @@ class _GoalListScreenState extends State<GoalListScreen>
   GoalStatus? _selectedStatus;
   String _searchQuery = '';
   SortOption _sortOption = SortOption.createdAtDesc;
+  GoalCardDisplayMode _displayMode = GoalCardDisplayMode.compact; // 컴팩트 모드를 기본값으로 설정
 
   @override
   void initState() {
@@ -64,6 +65,11 @@ class _GoalListScreenState extends State<GoalListScreen>
         title: const Text('전체 목표'),
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.view_agenda),
+            tooltip: '표시 모드',
+            onPressed: _showDisplayModeSelector,
+          ),
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: _showSearchDialog,
@@ -145,6 +151,7 @@ class _GoalListScreenState extends State<GoalListScreen>
           Expanded(
             child: GoalTreeView(
               goals: filteredGoals,
+              displayMode: _displayMode,
               onTap: _navigateToGoalDetail,
               onCompleteToggle: _toggleGoalCompletion,
               onEdit: _editGoal,
@@ -178,6 +185,7 @@ class _GoalListScreenState extends State<GoalListScreen>
           final goal = filteredGoals[index - 1];
           return GoalCard(
             goal: goal,
+            displayMode: _displayMode,
             onTap: () => _navigateToGoalDetail(goal),
             onCompleteToggle: (goal) => _toggleGoalCompletion(goal),
             onEdit: () => _editGoal(goal),
@@ -570,6 +578,148 @@ class _GoalListScreenState extends State<GoalListScreen>
       final goalProvider = context.read<GoalProvider>();
       await goalProvider.deleteGoal(goal.id!);
     }
+  }
+
+  void _showDisplayModeSelector() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: SingleChildScrollView(
+          child: Container(
+            padding: const EdgeInsets.all(AppSizes.paddingLarge),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '목표 표시 모드',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSizes.paddingSmall),
+                Text(
+                  '원하는 표시 모드를 선택하여 미리 확인해보세요',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondaryColor,
+                  ),
+                ),
+                const SizedBox(height: AppSizes.paddingMedium),
+
+                _buildModeOption(
+                  '일반 모드',
+                  '기본 스타일 - 모든 정보 표시',
+                  Icons.view_headline,
+                  GoalCardDisplayMode.normal,
+                  _displayMode == GoalCardDisplayMode.normal,
+                ),
+                _buildModeOption(
+                  '컴팩트 모드',
+                  '한 줄 표시 - 가장 작은 공간 차지',
+                  Icons.view_stream,
+                  GoalCardDisplayMode.compact,
+                  _displayMode == GoalCardDisplayMode.compact,
+                ),
+                _buildModeOption(
+                  '리스트 모드',
+                  '리스트 스타일 - 경계선 구분',
+                  Icons.view_list,
+                  GoalCardDisplayMode.list,
+                  _displayMode == GoalCardDisplayMode.list,
+                ),
+                _buildModeOption(
+                  '미니멀 모드',
+                  '간소화 - 설명/진행률 제외',
+                  Icons.view_agenda,
+                  GoalCardDisplayMode.minimal,
+                  _displayMode == GoalCardDisplayMode.minimal,
+                ),
+
+                const SizedBox(height: AppSizes.paddingSmall),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModeOption(
+    String title,
+    String description,
+    IconData icon,
+    GoalCardDisplayMode mode,
+    bool isSelected,
+  ) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _displayMode = mode;
+        });
+        Navigator.pop(context);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSizes.paddingSmall),
+        padding: const EdgeInsets.all(AppSizes.paddingMedium),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryColor.withOpacity(0.1)
+              : Colors.transparent,
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primaryColor
+                : AppColors.dividerColor,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected
+                  ? AppColors.primaryColor
+                  : AppColors.textSecondaryColor,
+              size: 28,
+            ),
+            const SizedBox(width: AppSizes.paddingMedium),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? AppColors.primaryColor
+                          : AppColors.textPrimaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(
+                Icons.check_circle,
+                color: AppColors.primaryColor,
+                size: 24,
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

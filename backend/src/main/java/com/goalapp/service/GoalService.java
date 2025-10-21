@@ -41,11 +41,9 @@ public class GoalService {
      * ID로 목표 조회 (subGoals 포함)
      */
     public Goal getGoalByIdWithSubGoals(Long goalId) {
-        Goal goal = goalRepository.findById(goalId)
+        return goalRepository.findById(goalId)
                 .orElseThrow(() -> new GoalNotFoundException("Goal not found with id: " + goalId));
-        // EntityGraph로 subGoals가 이미 로드됨
-        goal.getSubGoals().size(); // 로드 강제
-        return goal;
+        // EntityGraph로 subGoals가 이미 로드되므로 별도 처리 불필요
     }
 
     /**
@@ -177,17 +175,8 @@ public class GoalService {
             return 0.0;
         }
         
-        // 하위 목표가 있는 경우
-        List<Goal> children = goalRepository.findByParentGoalId(goal.getId());
-        if (!children.isEmpty()) {
-            long completedChildren = children.stream()
-                    .mapToLong(child -> child.getStatus() == GoalStatus.COMPLETED ? 1 : 0)
-                    .sum();
-            return (double) completedChildren / children.size() * 100.0;
-        }
-        
-        // 하위 목표가 없는 경우 (리프 노드)
-        return goal.getStatus() == GoalStatus.COMPLETED ? 100.0 : 0.0;
+        // Goal 엔티티의 메서드 사용으로 중복 제거
+        return goal.getProgressPercentage();
     }
 
     /**
@@ -202,5 +191,89 @@ public class GoalService {
             case WEEKLY -> List.of(GoalType.DAILY);
             case DAILY -> List.of(); // DAILY는 하위 목표를 가질 수 없음
         };
+    }
+
+    // ===== 만료 관련 메서드 =====
+
+    /**
+     * 만료된 목표들 조회
+     */
+    public List<Goal> getExpiredGoals() {
+        LocalDateTime now = LocalDateTime.now();
+        return goalRepository.findExpiredGoals(now);
+    }
+
+    /**
+     * 만료 임박 목표들 조회
+     * @param hoursBeforeExpiry 만료 몇 시간 전까지의 목표를 조회할지
+     */
+    public List<Goal> getExpiringSoonGoals(int hoursBeforeExpiry) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime threshold = now.plusHours(hoursBeforeExpiry);
+        return goalRepository.findExpiringSoonGoals(now, threshold);
+    }
+
+    /**
+     * 목표 수동 만료 처리
+     */
+    @Transactional
+    public Goal expireGoal(Long goalId) {
+        Goal goal = getGoalById(goalId);
+
+        if (goal.isCompleted()) {
+            throw new IllegalStateException("Completed goal cannot be expired");
+        }
+
+        goal.markAsExpired();
+        Goal savedGoal = goalRepository.save(goal);
+        log.info("Goal manually expired: {}", savedGoal.getTitle());
+
+        return savedGoal;
+    }
+
+    /**
+     * 목표 기간 연장
+     * @param goalId 목표 ID
+     * @param days 연장할 일수
+     */
+    @Transactional
+    public Goal extendGoalDueDate(Long goalId, int days) {
+        Goal goal = getGoalById(goalId);
+
+        if (goal.getDueDate() == null) {
+            throw new IllegalStateException("Goal does not have a due date");
+        }
+
+        if (days <= 0) {
+            throw new IllegalArgumentException("Extension days must be positive");
+        }
+
+        goal.extendDueDate(days);
+        Goal savedGoal = goalRepository.save(goal);
+        log.info("Goal due date extended by {} days: {} (New due date: {})",
+                days, savedGoal.getTitle(), savedGoal.getDueDate());
+
+        return savedGoal;
+    }
+
+    /**
+     * 목표 보관 처리
+     */
+    @Transactional
+    public Goal archiveGoal(Long goalId) {
+        Goal goal = getGoalById(goalId);
+
+        goal.archive();
+        Goal savedGoal = goalRepository.save(goal);
+        log.info("Goal archived: {}", savedGoal.getTitle());
+
+        return savedGoal;
+    }
+
+    /**
+     * 보관된 목표들 조회
+     */
+    public List<Goal> getArchivedGoals() {
+        return goalRepository.findByStatus(GoalStatus.ARCHIVED);
     }
 }

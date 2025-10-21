@@ -43,13 +43,16 @@ class ApiService {
   // PUT 요청 헬퍼
   Future<http.Response> _put(String url, Map<String, dynamic> body) async {
     try {
+      logger.networkRequest('PUT', url, body);
       final response = await http.put(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       ).timeout(_timeout);
+      logger.networkResponse(response.statusCode, url);
       return response;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      logger.networkError(url, e, stackTrace);
       throw Exception('네트워크 오류: $e');
     }
   }
@@ -57,12 +60,15 @@ class ApiService {
   // PATCH 요청 헬퍼
   Future<http.Response> _patch(String url) async {
     try {
+      logger.networkRequest('PATCH', url);
       final response = await http.patch(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       ).timeout(_timeout);
+      logger.networkResponse(response.statusCode, url);
       return response;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      logger.networkError(url, e, stackTrace);
       throw Exception('네트워크 오류: $e');
     }
   }
@@ -70,12 +76,15 @@ class ApiService {
   // DELETE 요청 헬퍼
   Future<http.Response> _delete(String url) async {
     try {
+      logger.networkRequest('DELETE', url);
       final response = await http.delete(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       ).timeout(_timeout);
+      logger.networkResponse(response.statusCode, url);
       return response;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      logger.networkError(url, e, stackTrace);
       throw Exception('네트워크 오류: $e');
     }
   }
@@ -211,5 +220,64 @@ class ApiService {
     return _handleResponse(response, (data) {
       return (data as List).map((typeString) => GoalType.fromString(typeString)).toList();
     });
+  }
+
+  // ===== 만료 관련 API =====
+
+  // 만료된 목표 조회
+  Future<List<Goal>> getExpiredGoals() async {
+    final response = await _get(ApiEndpoints.expiredGoals);
+    return _handleResponse(response, (data) {
+      return (data as List).map((json) => Goal.fromJson(json)).toList();
+    });
+  }
+
+  // 만료 임박 목표 조회 (기본 24시간)
+  Future<List<Goal>> getExpiringSoonGoals({int hours = 24}) async {
+    final response = await _get(ApiEndpoints.expiringSoonGoals(hours));
+    return _handleResponse(response, (data) {
+      return (data as List).map((json) => Goal.fromJson(json)).toList();
+    });
+  }
+
+  // 보관된 목표 조회
+  Future<List<Goal>> getArchivedGoals() async {
+    final response = await _get(ApiEndpoints.archivedGoals);
+    return _handleResponse(response, (data) {
+      return (data as List).map((json) => Goal.fromJson(json)).toList();
+    });
+  }
+
+  // 목표 수동 만료 처리
+  Future<Goal> expireGoal(int id) async {
+    final response = await _post(ApiEndpoints.expireGoal(id), {});
+    return _handleResponse(response, (data) => Goal.fromJson(data));
+  }
+
+  // 목표 보관 처리
+  Future<Goal> archiveGoal(int id) async {
+    final response = await _post(ApiEndpoints.archiveGoal(id), {});
+    return _handleResponse(response, (data) => Goal.fromJson(data));
+  }
+
+  // 목표 기간 연장
+  Future<Goal> extendGoalDueDate(int id, int days) async {
+    final response = await _post(ApiEndpoints.extendGoal(id, days), {});
+    return _handleResponse(response, (data) => Goal.fromJson(data));
+  }
+
+  // ===== FCM 테스트 API =====
+
+  // 테스트 알림 전송
+  Future<bool> sendTestNotification(String fcmToken, String goalTitle, int hoursLeft) async {
+    final response = await _post(
+      ApiEndpoints.sendTestNotification,
+      {
+        'fcmToken': fcmToken,
+        'goalTitle': goalTitle,
+        'hoursLeft': hoursLeft,
+      },
+    );
+    return _handleResponse(response, (data) => data as bool? ?? false);
   }
 }

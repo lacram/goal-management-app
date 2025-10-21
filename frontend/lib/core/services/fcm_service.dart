@@ -1,469 +1,268 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import '../../models/goal.dart';
-import '../notification_service.dart';
+import 'app_logger.dart';
+import 'api_service.dart';
 
-class FCMService {
-  static final FCMService _instance = FCMService._internal();
-  factory FCMService() => _instance;
-  FCMService._internal();
+/// FCM 푸시 알림 서비스
+///
+/// Firebase Cloud Messaging을 통한 푸시 알림 수신 및 처리
+class FcmService {
+  static final FcmService _instance = FcmService._internal();
+  factory FcmService() => _instance;
+  FcmService._internal();
 
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
-  final NotificationService _notificationService = NotificationService();
-  
+  final AppLogger _logger = AppLogger();
+
   String? _fcmToken;
-  bool _isInitialized = false;
 
-  /// FCM 서비스 초기화
+  /// 현재 FCM 토큰 가져오기
+  String? get fcmToken => _fcmToken;
+
+  /// FCM 초기화
   Future<void> initialize() async {
-    if (_isInitialized) return;
-
     try {
-      // Firebase 초기화
-      if (!Firebase.apps.isNotEmpty) {
-        await Firebase.initializeApp();
-      }
+      _logger.info('FCM', '🔔 Initializing FCM service...');
 
       // 알림 권한 요청
-      await _requestPermissions();
-      
-      // FCM 토큰 가져오기
-      await _getFCMToken();
-      
-      // 메시지 핸들러 설정
-      _setupMessageHandlers();
-      
-      // 로컬 알림 초기화
-      await _notificationService.initialize();
-      
-      _isInitialized = true;
-      debugPrint('FCM Service initialized successfully');
-    } catch (e) {
-      debugPrint('Error initializing FCM Service: $e');
-    }
-  }
-
-  /// 알림 권한 요청
-  Future<bool> _requestPermissions() async {
-    try {
-      final settings = await _firebaseMessaging.requestPermission(
+      NotificationSettings settings = await _firebaseMessaging.requestPermission(
         alert: true,
         badge: true,
         sound: true,
-        provisional: false,
         announcement: false,
         carPlay: false,
         criticalAlert: false,
+        provisional: false,
       );
 
+      _logger.info('FCM', '📢 Notification permission status: ${settings.authorizationStatus}');
+
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        debugPrint('User granted permission for notifications');
-        return true;
+        _logger.info('FCM', '✅ User granted notification permission');
       } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
-        debugPrint('User granted provisional permission for notifications');
-        return true;
+        _logger.info('FCM', '⚠️ User granted provisional notification permission');
       } else {
-        debugPrint('User declined or has not accepted permission for notifications');
-        return false;
+        _logger.warning('FCM', '❌ User declined notification permission');
+        return;
       }
-    } catch (e) {
-      debugPrint('Error requesting notification permissions: $e');
-      return false;
-    }
-  }
 
-  /// FCM 토큰 가져오기
-  Future<String?> _getFCMToken() async {
-    try {
+      // 로컬 알림 초기화
+      await _initializeLocalNotifications();
+
+      // FCM 토큰 가져오기
       _fcmToken = await _firebaseMessaging.getToken();
-      debugPrint('FCM Token: $_fcmToken');
-      
-      // 토큰 새로고침 리스너
-      _firebaseMessaging.onTokenRefresh.listen((token) {
-        _fcmToken = token;
-        debugPrint('FCM Token refreshed: $token');
-        // 서버에 새 토큰 전송
-        _sendTokenToServer(token);
-      });
-      
       if (_fcmToken != null) {
-        await _sendTokenToServer(_fcmToken!);
+        _logger.info('FCM', '✅ FCM Token obtained: ${_fcmToken!.substring(0, 20)}...');
+
+        // TODO: 서버에 FCM 토큰 등록
+        // await ApiService().registerFcmToken(_fcmToken!);
+      } else {
+        _logger.error('FCM', '❌ Failed to obtain FCM token');
       }
-      
-      return _fcmToken;
-    } catch (e) {
-      debugPrint('Error getting FCM token: $e');
-      return null;
+
+      // 토큰 갱신 리스너
+      _firebaseMessaging.onTokenRefresh.listen((newToken) {
+        _logger.info('FCM', '🔄 FCM Token refreshed: ${newToken.substring(0, 20)}...');
+        _fcmToken = newToken;
+
+        // TODO: 서버에 새 토큰 업데이트
+        // await ApiService().registerFcmToken(newToken);
+      });
+
+      // 포그라운드 메시지 리스너
+      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+
+      // 백그라운드에서 알림 클릭 시
+      FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessageClick);
+
+      // 앱이 종료된 상태에서 알림으로 실행된 경우
+      RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
+      if (initialMessage != null) {
+        _handleBackgroundMessageClick(initialMessage);
+      }
+
+      _logger.info('FCM', '✅ FCM service initialized successfully');
+    } catch (e, stackTrace) {
+      _logger.error('FCM', '❌ FCM initialization failed', e, stackTrace);
     }
   }
 
-  /// 서버에 FCM 토큰 전송
-  Future<void> _sendTokenToServer(String token) async {
-    try {
-      // 실제 구현에서는 백엔드 API에 토큰 저장
-      debugPrint('Sending FCM token to server: $token');
-      
-      // 예시: HTTP 요청으로 서버에 토큰 전송
-      // final response = await http.post(
-      //   Uri.parse('${ApiEndpoints.baseUrl}/fcm/token'),
-      //   headers: {'Content-Type': 'application/json'},
-      //   body: jsonEncode({'token': token, 'platform': Platform.operatingSystem}),
-      // );
-    } catch (e) {
-      debugPrint('Error sending FCM token to server: $e');
-    }
-  }
+  /// 로컬 알림 초기화
+  Future<void> _initializeLocalNotifications() async {
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
 
-  /// 메시지 핸들러 설정
-  void _setupMessageHandlers() {
-    // 포그라운드 메시지 처리
-    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-    
-    // 백그라운드 메시지 탭 처리
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessage);
-    
-    // 앱이 종료된 상태에서 알림 탭으로 실행된 경우 처리
-    FirebaseMessaging.instance.getInitialMessage().then((message) {
-      if (message != null) {
-        _handleBackgroundMessage(message);
-      }
-    });
+    const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+
+    const InitializationSettings settings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+
+    await _localNotifications.initialize(
+      settings,
+      onDidReceiveNotificationResponse: _handleLocalNotificationClick,
+    );
+
+    _logger.info('FCM', '✅ Local notifications initialized');
   }
 
   /// 포그라운드 메시지 처리
-  Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    debugPrint('Received foreground message: ${message.messageId}');
-    
-    // 로컬 알림으로 표시
-    await _showLocalNotification(message);
+  void _handleForegroundMessage(RemoteMessage message) {
+    _logger.info('FCM', '🔔 Foreground message received: ${message.notification?.title}');
+
+    if (message.notification != null) {
+      _showLocalNotification(message);
+    }
+
+    // 메시지 데이터 처리
+    if (message.data.isNotEmpty) {
+      _logger.info('FCM', '📦 Message data: ${message.data}');
+      _handleNotificationData(message.data);
+    }
   }
 
-  /// 백그라운드 메시지 처리
-  Future<void> _handleBackgroundMessage(RemoteMessage message) async {
-    debugPrint('Received background message: ${message.messageId}');
-    
-    // 메시지 타입에 따른 처리
-    final messageType = message.data['type'];
-    
-    switch (messageType) {
-      case 'goal_reminder':
-        await _handleGoalReminderMessage(message);
+  /// 백그라운드 메시지 클릭 처리
+  void _handleBackgroundMessageClick(RemoteMessage message) {
+    _logger.info('FCM', '👆 Background message clicked: ${message.notification?.title}');
+
+    if (message.data.isNotEmpty) {
+      _handleNotificationData(message.data);
+    }
+  }
+
+  /// 로컬 알림 클릭 처리
+  void _handleLocalNotificationClick(NotificationResponse response) {
+    _logger.info('FCM', '👆 Local notification clicked: ${response.payload}');
+
+    if (response.payload != null) {
+      // TODO: 알림 클릭 시 해당 목표 상세 화면으로 이동
+      // Navigator.pushNamed(context, '/goal-detail', arguments: goalId);
+    }
+  }
+
+  /// 알림 데이터 처리
+  void _handleNotificationData(Map<String, dynamic> data) {
+    final String? type = data['type'];
+
+    switch (type) {
+      case 'GOAL_EXPIRING':
+        final String? goalTitle = data['goal_title'];
+        final String? hoursLeft = data['hours_left'];
+        _logger.info('FCM', '⏰ Goal expiring: $goalTitle ($hoursLeft hours left)');
+
+        // TODO: 목표 만료 임박 처리
         break;
-      case 'goal_deadline':
-        await _handleGoalDeadlineMessage(message);
+
+      case 'GOAL_EXPIRED':
+        final String? goalTitle = data['goal_title'];
+        _logger.info('FCM', '⚠️ Goal expired: $goalTitle');
+
+        // TODO: 목표 만료 처리
         break;
-      case 'goal_completion':
-        await _handleGoalCompletionMessage(message);
+
+      case 'GOAL_ARCHIVED':
+        final String? goalTitle = data['goal_title'];
+        _logger.info('FCM', '📦 Goal archived: $goalTitle');
+
+        // TODO: 목표 보관 처리
         break;
-      case 'weekly_report':
-        await _handleWeeklyReportMessage(message);
-        break;
+
       default:
-        debugPrint('Unknown message type: $messageType');
+        _logger.info('FCM', 'ℹ️ Unknown notification type: $type');
     }
   }
 
   /// 로컬 알림 표시
   Future<void> _showLocalNotification(RemoteMessage message) async {
+    final notification = message.notification;
+    if (notification == null) return;
+
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'goal_notifications', // 채널 ID
+      '목표 알림', // 채널 이름
+      channelDescription: '목표 만료 및 완료 알림',
+      importance: Importance.high,
+      priority: Priority.high,
+      showWhen: true,
+    );
+
+    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _localNotifications.show(
+      notification.hashCode,
+      notification.title,
+      notification.body,
+      details,
+      payload: message.data['goal_id']?.toString(),
+    );
+
+    _logger.info('FCM', '📬 Local notification shown: ${notification.title}');
+  }
+
+  /// 테스트 알림 전송 요청
+  Future<bool> sendTestNotification(String goalTitle, int hoursLeft) async {
     try {
-      const androidDetails = AndroidNotificationDetails(
-        'goal_notifications',
-        '목표 알림',
-        channelDescription: '목표 관련 푸시 알림',
-        importance: Importance.high,
-        priority: Priority.high,
-        showWhen: true,
-        enableVibration: true,
-        playSound: true,
-      );
-
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-
-      const notificationDetails = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
-
-      await _localNotifications.show(
-        message.hashCode,
-        message.notification?.title ?? '목표 관리',
-        message.notification?.body ?? '새로운 알림이 있습니다',
-        notificationDetails,
-        payload: message.data['payload'],
-      );
-    } catch (e) {
-      debugPrint('Error showing local notification: $e');
-    }
-  }
-
-  /// 목표 리마인더 메시지 처리
-  Future<void> _handleGoalReminderMessage(RemoteMessage message) async {
-    final goalId = message.data['goalId'];
-    debugPrint('Goal reminder for goal ID: $goalId');
-    
-    // 목표 상세 화면으로 네비게이션
-    // NavigationService.navigateToGoalDetail(goalId);
-  }
-
-  /// 목표 마감일 메시지 처리
-  Future<void> _handleGoalDeadlineMessage(RemoteMessage message) async {
-    final goalId = message.data['goalId'];
-    final daysLeft = message.data['daysLeft'];
-    debugPrint('Goal deadline for goal ID: $goalId, days left: $daysLeft');
-    
-    // 목표 목록 화면으로 네비게이션
-    // NavigationService.navigateToGoalList(filter: 'deadline');
-  }
-
-  /// 목표 완료 축하 메시지 처리
-  Future<void> _handleGoalCompletionMessage(RemoteMessage message) async {
-    final goalId = message.data['goalId'];
-    debugPrint('Goal completion celebration for goal ID: $goalId');
-    
-    // 통계 화면으로 네비게이션
-    // NavigationService.navigateToStatistics();
-  }
-
-  /// 주간 리포트 메시지 처리
-  Future<void> _handleWeeklyReportMessage(RemoteMessage message) async {
-    debugPrint('Weekly report message received');
-    
-    // 통계 화면으로 네비게이션
-    // NavigationService.navigateToStatistics();
-  }
-
-  /// 목표 리마인더 푸시 알림 스케줄링 (서버 요청)
-  Future<void> scheduleGoalReminderPush(Goal goal) async {
-    if (_fcmToken == null) {
-      debugPrint('FCM token not available');
-      return;
-    }
-
-    try {
-      // 서버에 푸시 알림 스케줄링 요청
-      final scheduleData = {
-        'fcmToken': _fcmToken,
-        'goalId': goal.id,
-        'goalTitle': goal.title,
-        'reminderType': 'goal_reminder',
-        'scheduleTime': _getNextReminderTime(goal).toIso8601String(),
-        'repeatInterval': goal.reminderFrequency,
-      };
-
-      debugPrint('Scheduling push notification: $scheduleData');
-      
-      // 실제 구현에서는 백엔드 API 호출
-      // final response = await http.post(
-      //   Uri.parse('${ApiEndpoints.baseUrl}/fcm/schedule'),
-      //   headers: {'Content-Type': 'application/json'},
-      //   body: jsonEncode(scheduleData),
-      // );
-    } catch (e) {
-      debugPrint('Error scheduling goal reminder push: $e');
-    }
-  }
-
-  /// 마감일 푸시 알림 스케줄링
-  Future<void> scheduleDeadlinePush(Goal goal) async {
-    if (_fcmToken == null || goal.dueDate == null) return;
-
-    try {
-      final now = DateTime.now();
-      final dueDate = goal.dueDate!;
-      
-      // 마감일 하루 전 알림
-      final oneDayBefore = dueDate.subtract(const Duration(days: 1));
-      if (oneDayBefore.isAfter(now)) {
-        await _scheduleSpecificDeadlinePush(goal, oneDayBefore, 1);
+      if (_fcmToken == null) {
+        _logger.error('FCM', '❌ FCM token not available');
+        return false;
       }
-      
-      // 마감일 당일 알림
-      if (dueDate.isAfter(now)) {
-        await _scheduleSpecificDeadlinePush(goal, dueDate, 0);
+
+      _logger.info('FCM', '🧪 Sending test notification...');
+      final result = await ApiService().sendTestNotification(_fcmToken!, goalTitle, hoursLeft);
+
+      if (result) {
+        _logger.info('FCM', '✅ Test notification sent successfully');
+      } else {
+        _logger.error('FCM', '❌ Failed to send test notification');
       }
-    } catch (e) {
-      debugPrint('Error scheduling deadline push: $e');
+
+      return result;
+    } catch (e, stackTrace) {
+      _logger.error('FCM', '❌ Test notification error', e, stackTrace);
+      return false;
     }
   }
 
-  /// 특정 마감일 푸시 알림 스케줄링
-  Future<void> _scheduleSpecificDeadlinePush(Goal goal, DateTime scheduleTime, int daysLeft) async {
-    final scheduleData = {
-      'fcmToken': _fcmToken,
-      'goalId': goal.id,
-      'goalTitle': goal.title,
-      'reminderType': 'goal_deadline',
-      'scheduleTime': scheduleTime.toIso8601String(),
-      'daysLeft': daysLeft,
-    };
-
-    debugPrint('Scheduling deadline push notification: $scheduleData');
-    
-    // 백엔드 API 호출
-    // await _sendScheduleRequest(scheduleData);
-  }
-
-  /// 목표 완료 축하 푸시 알림
-  Future<void> sendGoalCompletionPush(Goal goal) async {
-    if (_fcmToken == null) return;
-
+  /// FCM 토큰 새로고침
+  Future<void> refreshToken() async {
     try {
-      final notificationData = {
-        'fcmToken': _fcmToken,
-        'goalId': goal.id,
-        'goalTitle': goal.title,
-        'reminderType': 'goal_completion',
-        'sendImmediately': true,
-      };
+      await _firebaseMessaging.deleteToken();
+      _fcmToken = await _firebaseMessaging.getToken();
 
-      debugPrint('Sending goal completion push: $notificationData');
-      
-      // 백엔드 API 호출
-      // await _sendImmediateNotification(notificationData);
-    } catch (e) {
-      debugPrint('Error sending goal completion push: $e');
+      if (_fcmToken != null) {
+        _logger.info('FCM', '✅ FCM Token refreshed: ${_fcmToken!.substring(0, 20)}...');
+
+        // TODO: 서버에 새 토큰 업데이트
+        // await ApiService().registerFcmToken(_fcmToken!);
+      }
+    } catch (e, stackTrace) {
+      _logger.error('FCM', '❌ Token refresh failed', e, stackTrace);
     }
   }
-
-  /// 주간 리포트 푸시 알림
-  Future<void> sendWeeklyReportPush(Map<String, dynamic> reportData) async {
-    if (_fcmToken == null) return;
-
-    try {
-      final notificationData = {
-        'fcmToken': _fcmToken,
-        'reminderType': 'weekly_report',
-        'reportData': reportData,
-        'sendImmediately': true,
-      };
-
-      debugPrint('Sending weekly report push: $notificationData');
-      
-      // 백엔드 API 호출
-      // await _sendImmediateNotification(notificationData);
-    } catch (e) {
-      debugPrint('Error sending weekly report push: $e');
-    }
-  }
-
-  /// 푸시 알림 구독 토픽 관리
-  Future<void> subscribeToTopic(String topic) async {
-    try {
-      await _firebaseMessaging.subscribeToTopic(topic);
-      debugPrint('Subscribed to topic: $topic');
-    } catch (e) {
-      debugPrint('Error subscribing to topic $topic: $e');
-    }
-  }
-
-  Future<void> unsubscribeFromTopic(String topic) async {
-    try {
-      await _firebaseMessaging.unsubscribeFromTopic(topic);
-      debugPrint('Unsubscribed from topic: $topic');
-    } catch (e) {
-      debugPrint('Error unsubscribing from topic $topic: $e');
-    }
-  }
-
-  /// 푸시 알림 취소
-  Future<void> cancelGoalPushNotifications(int goalId) async {
-    try {
-      // 서버에 푸시 알림 취소 요청
-      final cancelData = {
-        'fcmToken': _fcmToken,
-        'goalId': goalId,
-        'action': 'cancel_all',
-      };
-
-      debugPrint('Cancelling push notifications for goal: $goalId');
-      
-      // 백엔드 API 호출
-      // await _sendCancelRequest(cancelData);
-    } catch (e) {
-      debugPrint('Error cancelling goal push notifications: $e');
-    }
-  }
-
-  /// 모든 푸시 알림 취소
-  Future<void> cancelAllPushNotifications() async {
-    try {
-      final cancelData = {
-        'fcmToken': _fcmToken,
-        'action': 'cancel_all',
-      };
-
-      debugPrint('Cancelling all push notifications');
-      
-      // 백엔드 API 호출
-      // await _sendCancelRequest(cancelData);
-    } catch (e) {
-      debugPrint('Error cancelling all push notifications: $e');
-    }
-  }
-
-  /// 헬퍼 메서드들
-  DateTime _getNextReminderTime(Goal goal) {
-    final now = DateTime.now();
-    
-    switch (goal.reminderFrequency) {
-      case 'DAILY':
-        return DateTime(now.year, now.month, now.day + 1, 9, 0);
-      case 'WEEKLY':
-        return now.add(const Duration(days: 7));
-      case 'MONTHLY':
-        return DateTime(now.year, now.month + 1, now.day, 9, 0);
-      default:
-        return now.add(const Duration(hours: 1));
-    }
-  }
-
-  /// FCM 토큰 가져오기 (외부에서 사용)
-  String? get fcmToken => _fcmToken;
-  
-  /// 초기화 상태 확인
-  bool get isInitialized => _isInitialized;
 }
 
-// 백그라운드 메시지 핸들러 (글로벌 함수로 정의)
+/// 백그라운드 메시지 핸들러 (top-level 함수여야 함)
 @pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Firebase 초기화
-  await Firebase.initializeApp();
-  
-  debugPrint('Handling background message: ${message.messageId}');
-  
-  // 백그라운드에서도 로컬 알림 표시
-  const androidDetails = AndroidNotificationDetails(
-    'background_notifications',
-    '백그라운드 알림',
-    channelDescription: '백그라운드에서 받은 알림',
-    importance: Importance.high,
-    priority: Priority.high,
-  );
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  final logger = AppLogger();
+  logger.info('FCM', '🔔 Background message received: ${message.notification?.title}');
 
-  const notificationDetails = NotificationDetails(android: androidDetails);
-  
-  final notifications = FlutterLocalNotificationsPlugin();
-  await notifications.show(
-    message.hashCode,
-    message.notification?.title ?? '목표 관리',
-    message.notification?.body ?? '새로운 알림',
-    notificationDetails,
-  );
-}
-
-// FCM 서비스 초기화 (main.dart에서 호출)
-Future<void> initializeFCM() async {
-  // 백그라운드 메시지 핸들러 등록
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  
-  // FCM 서비스 초기화
-  await FCMService().initialize();
+  // 백그라운드에서 받은 메시지 처리
+  if (message.data.isNotEmpty) {
+    logger.info('FCM', '📦 Background message data: ${message.data}');
+  }
 }

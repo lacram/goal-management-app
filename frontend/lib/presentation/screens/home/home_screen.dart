@@ -14,6 +14,7 @@ import '../goal_list/goal_list_screen.dart';
 import '../statistics/statistics_screen.dart';
 import '../goal/goal_detail_screen.dart';
 import '../settings/settings_screen.dart';
+import '../routine/routine_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,7 +26,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _fabController;
   late Animation<double> _fabScaleAnimation;
-  GoalCardDisplayMode _displayMode = GoalCardDisplayMode.normal;
+  GoalCardDisplayMode _displayMode = GoalCardDisplayMode.compact; // 컴팩트 모드를 기본값으로 설정
   bool _showRootGoalsOnly = true; // 최상위 목표만 보기
   final Set<int> _expandedGoalIds = {}; // 확장된 목표 ID 집합
 
@@ -216,6 +217,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             delay: const Duration(milliseconds: 400),
             child: AnimatedGoalCard(
               child: Card(
+                color: Colors.transparent,
+                elevation: 0,
                 child: Padding(
                   padding: const EdgeInsets.all(AppSizes.paddingLarge),
                   child: Center(
@@ -422,6 +425,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             delay: const Duration(milliseconds: 400),
             child: AnimatedGoalCard(
               child: Card(
+                color: Colors.transparent,
+                elevation: 0,
                 child: Padding(
                   padding: const EdgeInsets.all(AppSizes.paddingLarge),
                   child: Center(
@@ -675,6 +680,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     
     return AnimatedGoalCard(
       child: Card(
+        color: Colors.transparent,
+        elevation: 0,
         child: Padding(
           padding: const EdgeInsets.all(AppSizes.paddingLarge),
           child: Column(
@@ -772,7 +779,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: AppSizes.paddingMedium),
+        const SizedBox(height: AppSizes.paddingSmall), // paddingMedium → paddingSmall
         Row(
           children: [
             Expanded(
@@ -790,10 +797,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            const SizedBox(width: AppSizes.paddingSmall),
+            const SizedBox(width: 6), // paddingSmall → 6px
             Expanded(
               child: ScaleInWidget(
                 delay: const Duration(milliseconds: 300),
+                child: _buildQuickActionCard(
+                  '루틴',
+                  Icons.repeat,
+                  const Color(0xFF10B981), // Emerald
+                  () {
+                    Navigator.of(context).pushWithSlideFromRight(
+                      const RoutineScreen(),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(width: 6), // paddingSmall → 6px
+            Expanded(
+              child: ScaleInWidget(
+                delay: const Duration(milliseconds: 400),
                 child: _buildQuickActionCard(
                   '진행중',
                   Icons.play_arrow,
@@ -811,10 +834,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            const SizedBox(width: AppSizes.paddingSmall),
+            const SizedBox(width: 6), // paddingSmall → 6px
             Expanded(
               child: ScaleInWidget(
-                delay: const Duration(milliseconds: 400),
+                delay: const Duration(milliseconds: 500),
                 child: _buildQuickActionCard(
                   '완료됨',
                   Icons.check_circle,
@@ -832,10 +855,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            const SizedBox(width: AppSizes.paddingSmall),
+            const SizedBox(width: 6), // paddingSmall → 6px
             Expanded(
               child: ScaleInWidget(
-                delay: const Duration(milliseconds: 500),
+                delay: const Duration(milliseconds: 600),
                 child: _buildQuickActionCard(
                   '통계',
                   Icons.analytics,
@@ -863,10 +886,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return AnimatedGoalCard(
       onTap: onTap,
       child: Card(
+        color: Colors.transparent,
+        elevation: 0,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            vertical: AppSizes.paddingMedium,
-            horizontal: AppSizes.paddingSmall,
+            vertical: 8, // paddingMedium (16) → 8
+            horizontal: 4, // paddingSmall (8) → 4
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -877,11 +902,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 maxScale: 1.05,
                 child: Icon(
                   icon,
-                  size: 28,
+                  size: 22, // 28 → 22
                   color: color,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 3), // 6 → 3
               Text(
                 title,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(

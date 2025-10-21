@@ -107,7 +107,7 @@ class PageTransitions {
       transitionDuration: AnimationConstants.normalDuration,
       reverseTransitionDuration: AnimationConstants.fastDuration,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final slideEnd = AnimationConstants.slideCenter;
+        const slideEnd = AnimationConstants.slideCenter;
         
         final slideTween = Tween(begin: slideBegin, end: slideEnd);
         final curvedAnimation = CurvedAnimation(

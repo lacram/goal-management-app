@@ -75,39 +75,29 @@ public class Goal {
     
     private String reminderFrequency;
     
-    // 목표 타입에 따른 유효성 검증
+    // 목표 타입에 따른 유효성 검증 - switch 문으로 최적화
     public boolean isValidParentChildRelation(Goal child) {
-        if (this.type == GoalType.LIFETIME) {
-            return child.type == GoalType.LIFETIME_SUB;
-        }
-        if (this.type == GoalType.LIFETIME_SUB) {
-            return child.type == GoalType.YEARLY || 
-                   child.type == GoalType.MONTHLY ||
-                   child.type == GoalType.WEEKLY ||
-                   child.type == GoalType.DAILY;
-        }
-        if (this.type == GoalType.YEARLY) {
-            return child.type == GoalType.MONTHLY || 
-                   child.type == GoalType.WEEKLY ||
-                   child.type == GoalType.DAILY;
-        }
-        if (this.type == GoalType.MONTHLY) {
-            return child.type == GoalType.WEEKLY ||
-                   child.type == GoalType.DAILY;
-        }
-        if (this.type == GoalType.WEEKLY) {
-            return child.type == GoalType.DAILY;
-        }
-        return false; // DAILY는 하위 목표를 가질 수 없음
+        return switch (this.type) {
+            case LIFETIME -> child.type == GoalType.LIFETIME_SUB;
+            case LIFETIME_SUB -> child.type == GoalType.YEARLY || 
+                                child.type == GoalType.MONTHLY ||
+                                child.type == GoalType.WEEKLY ||
+                                child.type == GoalType.DAILY;
+            case YEARLY -> child.type == GoalType.MONTHLY || 
+                          child.type == GoalType.WEEKLY ||
+                          child.type == GoalType.DAILY;
+            case MONTHLY -> child.type == GoalType.WEEKLY ||
+                           child.type == GoalType.DAILY;
+            case WEEKLY -> child.type == GoalType.DAILY;
+            case DAILY -> false; // DAILY는 하위 목표를 가질 수 없음
+        };
     }
     
-    // 독립 목표인지 확인 (어디에도 종속되지 않은 목표)
+    // 독립 목표인지 확인 (어디에도 종속되지 않은 목표) - EnumSet으로 최적화
     public boolean isIndependentGoal() {
         return parentGoal == null && 
-               (type == GoalType.YEARLY || 
-                type == GoalType.MONTHLY || 
-                type == GoalType.WEEKLY || 
-                type == GoalType.DAILY);
+               java.util.EnumSet.of(GoalType.YEARLY, GoalType.MONTHLY, 
+                                   GoalType.WEEKLY, GoalType.DAILY).contains(type);
     }
     
     // 하위 목표 추가
@@ -140,16 +130,58 @@ public class Goal {
         this.completedAt = null;
     }
     
-    // 진행률 계산 (하위 목표 기반)
+    // 진행률 계산 (하위 목표 기반) - 최적화
     public double getProgressPercentage() {
         if (subGoals.isEmpty()) {
             return isCompleted ? 100.0 : 0.0;
         }
-        
+
+        // Stream API 최적화: count() 사용
         long completedSubGoals = subGoals.stream()
-                .mapToLong(goal -> goal.isCompleted() ? 1 : 0)
-                .sum();
-        
-        return (double) completedSubGoals / subGoals.size() * 100;
+                .filter(Goal::isCompleted)
+                .count();
+
+        return (double) completedSubGoals / subGoals.size() * 100.0;
+    }
+
+    // 만료 여부 확인
+    public boolean isExpired() {
+        return dueDate != null &&
+               LocalDateTime.now().isAfter(dueDate) &&
+               !isCompleted &&
+               status == GoalStatus.ACTIVE;
+    }
+
+    // 만료 임박 여부 확인 (24시간 이내)
+    public boolean isExpiringSoon(int hoursBeforeExpiry) {
+        if (dueDate == null || isCompleted || status != GoalStatus.ACTIVE) {
+            return false;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime threshold = now.plusHours(hoursBeforeExpiry);
+        return dueDate.isAfter(now) && dueDate.isBefore(threshold);
+    }
+
+    // 만료 처리
+    public void markAsExpired() {
+        if (!isCompleted) {
+            this.status = GoalStatus.EXPIRED;
+            this.updatedAt = LocalDateTime.now();
+        }
+    }
+
+    // 보관 처리
+    public void archive() {
+        this.status = GoalStatus.ARCHIVED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // 기간 연장
+    public void extendDueDate(int days) {
+        if (this.dueDate != null) {
+            this.dueDate = this.dueDate.plusDays(days);
+            this.status = GoalStatus.ACTIVE; // 연장 시 다시 활성화
+            this.updatedAt = LocalDateTime.now();
+        }
     }
 }

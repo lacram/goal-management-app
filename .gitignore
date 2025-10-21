@@ -49,3 +49,11 @@ temp/
 # Environment
 .env
 .env.local
+
+# Firebase
+**/google-services.json
+**/GoogleService-Info.plist
+
+# Firebase Admin SDK
+**/firebase-adminsdk.json
+**/serviceAccountKey.json
