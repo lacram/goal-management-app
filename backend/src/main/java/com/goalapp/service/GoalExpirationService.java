@@ -131,4 +131,50 @@ public class GoalExpirationService {
         log.info("✅ Manually archived {} goals", goalsToArchive.size());
         return goalsToArchive.size();
     }
+
+    /**
+     * 완료된 목표 자동 삭제
+     * 매일 새벽 3시에 실행
+     * 완료된 지 24시간이 지난 목표를 자동으로 삭제
+     */
+    @Scheduled(cron = "0 0 3 * * *")
+    @Transactional
+    public void deleteOldCompletedGoals() {
+        log.info("🗑️ Starting scheduled task: deleteOldCompletedGoals");
+
+        // 24시간 전 시간 계산
+        LocalDateTime deleteThreshold = LocalDateTime.now().minusHours(24);
+        List<Goal> goalsToDelete = goalRepository.findOldCompletedGoals(deleteThreshold);
+
+        if (goalsToDelete.isEmpty()) {
+            log.info("✅ No old completed goals to delete");
+            return;
+        }
+
+        // 삭제 처리
+        goalsToDelete.forEach(goal -> {
+            log.info("🗑️ Deleting completed goal: '{}' (ID: {}, Completed at: {})",
+                    goal.getTitle(), goal.getId(), goal.getCompletedAt());
+        });
+
+        goalRepository.deleteAll(goalsToDelete);
+        log.info("✅ Deleted {} old completed goals successfully", goalsToDelete.size());
+    }
+
+    /**
+     * 수동으로 완료된 목표 삭제 (테스트/관리자용)
+     * @return 삭제된 목표 수
+     */
+    @Transactional
+    public int manualDeleteCompletedGoals() {
+        log.info("🔧 Manual delete completed goals triggered");
+
+        LocalDateTime deleteThreshold = LocalDateTime.now().minusHours(24);
+        List<Goal> goalsToDelete = goalRepository.findOldCompletedGoals(deleteThreshold);
+
+        goalRepository.deleteAll(goalsToDelete);
+
+        log.info("✅ Manually deleted {} completed goals", goalsToDelete.size());
+        return goalsToDelete.size();
+    }
 }

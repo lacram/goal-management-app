@@ -127,4 +127,9 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     @EntityGraph(attributePaths = {"subGoals"})
     @Query("SELECT g FROM Goal g WHERE g.status = 'EXPIRED' AND g.updatedAt < :archiveThreshold")
     List<Goal> findExpiredGoalsForArchiving(@Param("archiveThreshold") LocalDateTime archiveThreshold);
+
+    // 완료된 지 일정 시간 경과한 목표 조회 (자동 삭제 대상)
+    @EntityGraph(attributePaths = {"subGoals"})
+    @Query("SELECT g FROM Goal g WHERE g.status = 'COMPLETED' AND g.completedAt < :deleteThreshold")
+    List<Goal> findOldCompletedGoals(@Param("deleteThreshold") LocalDateTime deleteThreshold);
 }
