@@ -109,9 +109,16 @@ class ApiEndpoints {
 
   static String routineCompletions(int id) => '$routines/$id/completions';
 
-  // ===== FCM 테스트 엔드포인트 =====
+  // ===== FCM 관련 엔드포인트 =====
 
-  static String get sendTestNotification => '$_baseUrl/notifications/test';
+  // 디바이스 토큰 관리
+  static String get deviceTokens => '$_baseUrl/device-tokens';
+
+  static String deviceTokenById(int id) => '$deviceTokens/$id';
+
+  static String get deviceTokenByToken => '$deviceTokens/by-token';
+
+  static String get sendTestNotification => '$deviceTokens/test-notification';
 
   // 비동기 버전들 (설정 화면에서 사용할 예정)
   static Future<String> get goalsAsync async {

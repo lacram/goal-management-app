@@ -55,19 +55,37 @@ class FcmService {
       if (_fcmToken != null) {
         _logger.info('FCM', '✅ FCM Token obtained: ${_fcmToken!.substring(0, 20)}...');
 
-        // TODO: 서버에 FCM 토큰 등록
-        // await ApiService().registerFcmToken(_fcmToken!);
+        // 서버에 FCM 토큰 등록
+        bool registered = await ApiService().registerFcmToken(
+          _fcmToken!,
+          platform: 'android', // TODO: Platform.isAndroid ? 'android' : 'ios'
+        );
+
+        if (registered) {
+          _logger.info('FCM', '✅ FCM token registered to server');
+        } else {
+          _logger.warning('FCM', '⚠️ Failed to register FCM token to server');
+        }
       } else {
         _logger.error('FCM', '❌ Failed to obtain FCM token');
       }
 
       // 토큰 갱신 리스너
-      _firebaseMessaging.onTokenRefresh.listen((newToken) {
+      _firebaseMessaging.onTokenRefresh.listen((newToken) async {
         _logger.info('FCM', '🔄 FCM Token refreshed: ${newToken.substring(0, 20)}...');
         _fcmToken = newToken;
 
-        // TODO: 서버에 새 토큰 업데이트
-        // await ApiService().registerFcmToken(newToken);
+        // 서버에 새 토큰 업데이트
+        bool registered = await ApiService().registerFcmToken(
+          newToken,
+          platform: 'android',
+        );
+
+        if (registered) {
+          _logger.info('FCM', '✅ Refreshed FCM token registered to server');
+        } else {
+          _logger.warning('FCM', '⚠️ Failed to register refreshed FCM token');
+        }
       });
 
       // 포그라운드 메시지 리스너
@@ -246,8 +264,17 @@ class FcmService {
       if (_fcmToken != null) {
         _logger.info('FCM', '✅ FCM Token refreshed: ${_fcmToken!.substring(0, 20)}...');
 
-        // TODO: 서버에 새 토큰 업데이트
-        // await ApiService().registerFcmToken(_fcmToken!);
+        // 서버에 새 토큰 업데이트
+        bool registered = await ApiService().registerFcmToken(
+          _fcmToken!,
+          platform: 'android',
+        );
+
+        if (registered) {
+          _logger.info('FCM', '✅ FCM token registered to server');
+        } else {
+          _logger.warning('FCM', '⚠️ Failed to register FCM token');
+        }
       }
     } catch (e, stackTrace) {
       _logger.error('FCM', '❌ Token refresh failed', e, stackTrace);

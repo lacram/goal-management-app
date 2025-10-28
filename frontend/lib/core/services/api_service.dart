@@ -266,18 +266,56 @@ class ApiService {
     return _handleResponse(response, (data) => Goal.fromJson(data));
   }
 
-  // ===== FCM 테스트 API =====
+  // ===== FCM API =====
+
+  // FCM 토큰 등록
+  Future<bool> registerFcmToken(String fcmToken, {
+    String? deviceId,
+    String? deviceName,
+    String? platform,
+  }) async {
+    try {
+      final response = await _post(
+        ApiEndpoints.deviceTokens,
+        {
+          'fcmToken': fcmToken,
+          if (deviceId != null) 'deviceId': deviceId,
+          if (deviceName != null) 'deviceName': deviceName,
+          if (platform != null) 'platform': platform,
+        },
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = jsonDecode(response.body);
+        return data['success'] ?? false;
+      }
+      return false;
+    } catch (e) {
+      logger.error('API', 'Failed to register FCM token', e);
+      return false;
+    }
+  }
 
   // 테스트 알림 전송
   Future<bool> sendTestNotification(String fcmToken, String goalTitle, int hoursLeft) async {
-    final response = await _post(
-      ApiEndpoints.sendTestNotification,
-      {
-        'fcmToken': fcmToken,
-        'goalTitle': goalTitle,
-        'hoursLeft': hoursLeft,
-      },
-    );
-    return _handleResponse(response, (data) => data as bool? ?? false);
+    try {
+      final response = await _post(
+        ApiEndpoints.sendTestNotification,
+        {
+          'fcmToken': fcmToken,
+          'title': goalTitle,
+          'body': '$goalTitle 목표가 $hoursLeft시간 후 만료됩니다',
+        },
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = jsonDecode(response.body);
+        return data['success'] ?? false;
+      }
+      return false;
+    } catch (e) {
+      logger.error('API', 'Failed to send test notification', e);
+      return false;
+    }
   }
 }
