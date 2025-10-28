@@ -22,7 +22,6 @@ import java.util.Optional;
 @RequestMapping("/api/device-tokens")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class DeviceTokenController {
 
     private final DeviceTokenRepository deviceTokenRepository;
