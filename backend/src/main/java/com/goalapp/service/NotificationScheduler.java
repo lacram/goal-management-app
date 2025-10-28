@@ -49,7 +49,7 @@ public class NotificationScheduler {
         int sentCount = 0;
         for (Goal goal : expiringSoon) {
             // 알림이 활성화된 목표만 처리
-            if (!goal.getReminderEnabled()) {
+            if (!goal.isReminderEnabled()) {
                 continue;
             }
 
@@ -99,7 +99,7 @@ public class NotificationScheduler {
 
         int sentCount = 0;
         for (Goal goal : expiringSoon) {
-            if (!goal.getReminderEnabled()) {
+            if (!goal.isReminderEnabled()) {
                 continue;
             }
 

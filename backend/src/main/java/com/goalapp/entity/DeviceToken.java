@@ -55,6 +55,7 @@ public class DeviceToken {
      * 토큰 활성화 여부
      */
     @Column(name = "is_active")
+    @Builder.Default
     private Boolean isActive = true;
 
     /**
