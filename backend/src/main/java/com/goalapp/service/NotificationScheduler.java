@@ -1,6 +1,8 @@
 package com.goalapp.service;
 
+import com.goalapp.entity.DeviceToken;
 import com.goalapp.entity.Goal;
+import com.goalapp.repository.DeviceTokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,6 +21,7 @@ public class NotificationScheduler {
 
     private final GoalExpirationService expirationService;
     private final FcmService fcmService;
+    private final DeviceTokenRepository deviceTokenRepository;
 
     /**
      * 만료 임박 알림 (매일 오전 9시)
@@ -35,22 +38,41 @@ public class NotificationScheduler {
             return;
         }
 
-        int sentCount = 0;
-        for (Goal goal : expiringSoon) {
-            // TODO: FCM 토큰을 데이터베이스에서 가져오기
-            // 현재는 로그만 출력
-            log.info("🔔 Would send notification for goal: '{}' (Due: {})",
-                    goal.getTitle(), goal.getDueDate());
+        // 활성화된 모든 디바이스 토큰 가져오기
+        List<DeviceToken> activeTokens = deviceTokenRepository.findByIsActiveTrue();
 
-            // FCM 토큰이 있다면:
-            // String fcmToken = userService.getFcmToken(goal.getUserId());
-            // if (fcmToken != null) {
-            //     fcmService.sendGoalExpiringNotification(fcmToken, goal.getTitle(), 24);
-            //     sentCount++;
-            // }
+        if (activeTokens.isEmpty()) {
+            log.warn("⚠️ No active device tokens found");
+            return;
         }
 
-        log.info("✅ Daily expiration warnings completed: {} goals", expiringSoon.size());
+        int sentCount = 0;
+        for (Goal goal : expiringSoon) {
+            // 알림이 활성화된 목표만 처리
+            if (!goal.getReminderEnabled()) {
+                continue;
+            }
+
+            log.info("🔔 Sending notification for goal: '{}' (Due: {})", goal.getTitle(), goal.getDueDate());
+
+            // 모든 활성화된 디바이스에 알림 전송
+            for (DeviceToken token : activeTokens) {
+                boolean success = fcmService.sendGoalExpiringNotification(
+                        token.getFcmToken(),
+                        goal.getTitle(),
+                        24
+                );
+
+                if (success) {
+                    token.markAsUsed();
+                    deviceTokenRepository.save(token);
+                    sentCount++;
+                }
+            }
+        }
+
+        log.info("✅ Daily expiration warnings completed: {} notifications sent for {} goals",
+                 sentCount, expiringSoon.size());
     }
 
     /**
@@ -68,18 +90,39 @@ public class NotificationScheduler {
             return;
         }
 
+        List<DeviceToken> activeTokens = deviceTokenRepository.findByIsActiveTrue();
+
+        if (activeTokens.isEmpty()) {
+            log.warn("⚠️ No active device tokens found");
+            return;
+        }
+
+        int sentCount = 0;
         for (Goal goal : expiringSoon) {
+            if (!goal.getReminderEnabled()) {
+                continue;
+            }
+
             log.info("⚠️ URGENT: Goal '{}' expires in less than 3 hours (Due: {})",
                     goal.getTitle(), goal.getDueDate());
 
-            // TODO: FCM 알림 전송
-            // String fcmToken = userService.getFcmToken(goal.getUserId());
-            // if (fcmToken != null) {
-            //     fcmService.sendGoalExpiringNotification(fcmToken, goal.getTitle(), 3);
-            // }
+            for (DeviceToken token : activeTokens) {
+                boolean success = fcmService.sendGoalExpiringNotification(
+                        token.getFcmToken(),
+                        goal.getTitle(),
+                        3
+                );
+
+                if (success) {
+                    token.markAsUsed();
+                    deviceTokenRepository.save(token);
+                    sentCount++;
+                }
+            }
         }
 
-        log.info("✅ Urgent expiration warnings completed: {} goals", expiringSoon.size());
+        log.info("✅ Urgent expiration warnings completed: {} notifications sent for {} goals",
+                 sentCount, expiringSoon.size());
     }
 
     /**
