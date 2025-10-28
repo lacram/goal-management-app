@@ -29,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   GoalCardDisplayMode _displayMode = GoalCardDisplayMode.compact; // 컴팩트 모드를 기본값으로 설정
   bool _showRootGoalsOnly = true; // 최상위 목표만 보기
   final Set<int> _expandedGoalIds = {}; // 확장된 목표 ID 집합
+  bool _showAllGoals = false; // 전체 목표 섹션에서 모든 목표 표시 여부
 
   @override
   void initState() {
@@ -357,7 +358,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final allActiveGoals = goalProvider.activeGoals;
     final rootGoals = allActiveGoals.where((goal) => goal.parentGoalId == null).toList();
     final displayGoals = _showRootGoalsOnly ? rootGoals : allActiveGoals;
-    final displayLimit = 5;
+    final displayLimit = _showAllGoals ? displayGoals.length : 5;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -489,17 +490,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   )).toList(),
                 ),
 
-        if (displayGoals.length > displayLimit) ...[
+        if (displayGoals.length > 5) ...[
           const SizedBox(height: AppSizes.paddingMedium),
           Center(
             child: TextButton.icon(
               onPressed: () {
-                Navigator.of(context).pushWithSlideFromRight(
-                  const GoalListScreen(),
-                );
+                setState(() {
+                  _showAllGoals = !_showAllGoals;
+                });
               },
-              icon: const Icon(Icons.arrow_forward),
-              label: Text('전체 목표 보기 (${displayGoals.length - displayLimit}개 더)'),
+              icon: Icon(_showAllGoals ? Icons.expand_less : Icons.expand_more),
+              label: Text(
+                _showAllGoals
+                  ? '접기'
+                  : '더보기 (${displayGoals.length - 5}개 더)',
+              ),
             ),
           ),
         ],
