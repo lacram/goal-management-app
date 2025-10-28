@@ -64,6 +64,10 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     } else if (widget.initialType != null) {
       // 초기 타입이 지정된 경우
       _selectedType = widget.initialType!;
+      _setAutomaticDueDate(_selectedType);
+    } else {
+      // 기본값인 DAILY에 대한 자동 마감일 설정
+      _setAutomaticDueDate(_selectedType);
     }
 
     // 상위 목표가 지정된 경우
@@ -72,6 +76,38 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
       _loadAvailableSubTypes();
     } else {
       _loadParentGoals();
+    }
+  }
+
+  /// 목표 타입에 따라 자동으로 마감일을 설정
+  void _setAutomaticDueDate(GoalType type) {
+    final now = DateTime.now();
+
+    switch (type) {
+      case GoalType.daily:
+        // 일단위: 오늘 자정 (23:59:59)
+        _selectedDueDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        break;
+      case GoalType.weekly:
+        // 주단위: 이번 주 일요일 자정
+        final daysUntilSunday = 7 - now.weekday;
+        final nextSunday = now.add(Duration(days: daysUntilSunday));
+        _selectedDueDate = DateTime(nextSunday.year, nextSunday.month, nextSunday.day, 23, 59, 59);
+        break;
+      case GoalType.monthly:
+        // 월단위: 이번 달 마지막 날 자정
+        final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
+        _selectedDueDate = DateTime(lastDayOfMonth.year, lastDayOfMonth.month, lastDayOfMonth.day, 23, 59, 59);
+        break;
+      case GoalType.yearly:
+        // 년단위: 올해 마지막 날 자정
+        _selectedDueDate = DateTime(now.year, 12, 31, 23, 59, 59);
+        break;
+      case GoalType.lifetime:
+      case GoalType.lifetimeSub:
+        // 평생 목표와 평생 하위 목표: 마감일 없음
+        _selectedDueDate = null;
+        break;
     }
   }
 
@@ -244,6 +280,8 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                     if (value != null) {
                       setState(() {
                         _selectedType = value;
+                        // 타입 변경 시 자동으로 마감일 설정
+                        _setAutomaticDueDate(value);
                       });
                     }
                   },
