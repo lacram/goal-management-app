@@ -17,6 +17,9 @@ void main() async {
   await logger.initialize();
   logger.info('App', '앱 시작');
 
+  // API Endpoints 초기화 (Base URL 캐싱)
+  await ApiEndpoints.initialize();
+
   // 현재 환경 및 서버 URL 로깅
   final environment = ApiEndpoints.currentEnvironment;
   final baseUrl = ApiEndpoints.goals.split('/goals').first;

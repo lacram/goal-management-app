@@ -7,13 +7,19 @@ import '../services/app_logger.dart';
 class ApiService {
   static const Duration _timeout = Duration(seconds: 10);
 
+  // HTTP 클라이언트 싱글톤 (연결 재사용)
+  static final http.Client _client = http.Client();
+
   // GET 요청 헬퍼
   Future<http.Response> _get(String url) async {
     try {
       logger.networkRequest('GET', url);
-      final response = await http.get(
+      final response = await _client.get(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Connection': 'keep-alive',
+        },
       ).timeout(_timeout);
       logger.networkResponse(response.statusCode, url);
       return response;
@@ -27,9 +33,12 @@ class ApiService {
   Future<http.Response> _post(String url, Map<String, dynamic> body) async {
     try {
       logger.networkRequest('POST', url, body);
-      final response = await http.post(
+      final response = await _client.post(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Connection': 'keep-alive',
+        },
         body: jsonEncode(body),
       ).timeout(_timeout);
       logger.networkResponse(response.statusCode, url);
@@ -44,9 +53,12 @@ class ApiService {
   Future<http.Response> _put(String url, Map<String, dynamic> body) async {
     try {
       logger.networkRequest('PUT', url, body);
-      final response = await http.put(
+      final response = await _client.put(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Connection': 'keep-alive',
+        },
         body: jsonEncode(body),
       ).timeout(_timeout);
       logger.networkResponse(response.statusCode, url);
@@ -61,9 +73,12 @@ class ApiService {
   Future<http.Response> _patch(String url) async {
     try {
       logger.networkRequest('PATCH', url);
-      final response = await http.patch(
+      final response = await _client.patch(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Connection': 'keep-alive',
+        },
       ).timeout(_timeout);
       logger.networkResponse(response.statusCode, url);
       return response;
@@ -77,9 +92,12 @@ class ApiService {
   Future<http.Response> _delete(String url) async {
     try {
       logger.networkRequest('DELETE', url);
-      final response = await http.delete(
+      final response = await _client.delete(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Connection': 'keep-alive',
+        },
       ).timeout(_timeout);
       logger.networkResponse(response.statusCode, url);
       return response;
@@ -87,6 +105,11 @@ class ApiService {
       logger.networkError(url, e, stackTrace);
       throw Exception('네트워크 오류: $e');
     }
+  }
+
+  // 클라이언트 정리 (앱 종료 시 호출)
+  void dispose() {
+    _client.close();
   }
 
   // 응답 처리 헬퍼

@@ -8,7 +8,14 @@ spring:
     url: jdbc:h2:file:./data/goaldb
     driver-class-name: org.h2.Driver
     username: sa
-    password: 
+    password:
+    hikari:
+      # 로컬 개발 환경 최적화
+      maximum-pool-size: 10         # 최대 10개 연결
+      minimum-idle: 2               # 최소 2개 연결 유지
+      connection-timeout: 20000     # 연결 대기 20초
+      idle-timeout: 300000          # 유휴 연결 5분 후 제거
+      max-lifetime: 1800000         # 연결 최대 수명 30분 
   
   # H2 콘솔 설정
   h2:

@@ -57,68 +57,76 @@ class ApiEndpoints {
   // 현재 사용 중인 환경 확인
   static String get currentEnvironment => buildEnvironment;
   
-  // 환경에 따른 기본 URL (빌드 타임에 결정)
-  static String get _baseUrl => _getDefaultBaseUrl();
+  // 캐시된 base URL (앱 시작 시 초기화)
+  static String? _cachedBaseUrl;
+
+  // Base URL 초기화 (앱 시작 시 한 번만 호출)
+  static Future<void> initialize() async {
+    _cachedBaseUrl = await getBaseUrl();
+  }
+
+  // 캐시된 base URL 또는 기본값 반환
+  static String get _baseUrl => _cachedBaseUrl ?? _getDefaultBaseUrl();
 
   // Goal 관련 엔드포인트
   static String get goals => '$_baseUrl/goals';
 
-  static String goalById(int id) => '$goals/$id';
+  static String goalById(int id) => '$_baseUrl/goals/$id';
 
-  static String completeGoal(int id) => '$goals/$id/complete';
+  static String completeGoal(int id) => '$_baseUrl/goals/$id/complete';
 
-  static String uncompleteGoal(int id) => '$goals/$id/uncomplete';
+  static String uncompleteGoal(int id) => '$_baseUrl/goals/$id/uncomplete';
 
-  static String goalChildren(int id) => '$goals/$id/children';
+  static String goalChildren(int id) => '$_baseUrl/goals/$id/children';
 
-  static String get todayGoals => '$goals/today';
+  static String get todayGoals => '$_baseUrl/goals/today';
 
-  static String get activeGoals => '$goals/status/ACTIVE';
+  static String get activeGoals => '$_baseUrl/goals/status/ACTIVE';
 
-  static String get completedGoals => '$goals/status/COMPLETED';
+  static String get completedGoals => '$_baseUrl/goals/status/COMPLETED';
 
-  static String get rootGoals => '$goals/root';
+  static String get rootGoals => '$_baseUrl/goals/root';
 
-  static String goalsByType(String type) => '$goals/type/$type';
+  static String goalsByType(String type) => '$_baseUrl/goals/type/$type';
 
-  static String availableSubTypes(String parentType) => '$goals/types/$parentType/available-subtypes';
+  static String availableSubTypes(String parentType) => '$_baseUrl/goals/types/$parentType/available-subtypes';
 
   // 만료 관련 엔드포인트
-  static String get expiredGoals => '$goals/expired';
+  static String get expiredGoals => '$_baseUrl/goals/expired';
 
-  static String expiringSoonGoals(int hours) => '$goals/expiring-soon?hours=$hours';
+  static String expiringSoonGoals(int hours) => '$_baseUrl/goals/expiring-soon?hours=$hours';
 
-  static String get archivedGoals => '$goals/archived';
+  static String get archivedGoals => '$_baseUrl/goals/archived';
 
-  static String expireGoal(int id) => '$goals/$id/expire';
+  static String expireGoal(int id) => '$_baseUrl/goals/$id/expire';
 
-  static String archiveGoal(int id) => '$goals/$id/archive';
+  static String archiveGoal(int id) => '$_baseUrl/goals/$id/archive';
 
-  static String extendGoal(int id, int days) => '$goals/$id/extend?days=$days';
+  static String extendGoal(int id, int days) => '$_baseUrl/goals/$id/extend?days=$days';
 
   // Routine 관련 엔드포인트
   static String get routines => '$_baseUrl/routines';
 
-  static String routineById(int id) => '$routines/$id';
+  static String routineById(int id) => '$_baseUrl/routines/$id';
 
-  static String get activeRoutines => '$routines/active';
+  static String get activeRoutines => '$_baseUrl/routines/active';
 
-  static String get todayRoutines => '$routines/today';
+  static String get todayRoutines => '$_baseUrl/routines/today';
 
-  static String completeRoutine(int id) => '$routines/$id/complete';
+  static String completeRoutine(int id) => '$_baseUrl/routines/$id/complete';
 
-  static String routineCompletions(int id) => '$routines/$id/completions';
+  static String routineCompletions(int id) => '$_baseUrl/routines/$id/completions';
 
   // ===== FCM 관련 엔드포인트 =====
 
   // 디바이스 토큰 관리
   static String get deviceTokens => '$_baseUrl/device-tokens';
 
-  static String deviceTokenById(int id) => '$deviceTokens/$id';
+  static String deviceTokenById(int id) => '$_baseUrl/device-tokens/$id';
 
-  static String get deviceTokenByToken => '$deviceTokens/by-token';
+  static String get deviceTokenByToken => '$_baseUrl/device-tokens/by-token';
 
-  static String get sendTestNotification => '$deviceTokens/test-notification';
+  static String get sendTestNotification => '$_baseUrl/device-tokens/test-notification';
 
   // 비동기 버전들 (설정 화면에서 사용할 예정)
   static Future<String> get goalsAsync async {
@@ -129,5 +137,10 @@ class ApiEndpoints {
   static Future<String> get routinesAsync async {
     final baseUrl = await getBaseUrl();
     return '$baseUrl/routines';
+  }
+
+  // Base URL 갱신 (설정 변경 시 호출)
+  static Future<void> refreshBaseUrl() async {
+    _cachedBaseUrl = await getBaseUrl();
   }
 }

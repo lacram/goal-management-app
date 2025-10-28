@@ -7,13 +7,15 @@ spring:
     password: J8qih0ZWIvnLINZW
     driver-class-name: org.postgresql.Driver
     hikari:
-      # Supabase 무료 플랜 안정성 - 단일 연결 사용
-      maximum-pool-size: 1          # 최소 1개 연결 (무료 플랜 최대 안정성)
-      minimum-idle: 1               # 항상 1개 연결 유지
-      connection-timeout: 30000     # 연결 대기 30초
-      idle-timeout: 600000          # 유휴 연결 10분 후 제거
+      # Supabase 무료 플랜 최적화 - 성능과 안정성 균형
+      maximum-pool-size: 5          # 최대 5개 연결 (무료 플랜 안정적 범위)
+      minimum-idle: 2               # 최소 2개 연결 유지 (빠른 응답)
+      connection-timeout: 20000     # 연결 대기 20초 (빠른 실패)
+      idle-timeout: 300000          # 유휴 연결 5분 후 제거
       max-lifetime: 1800000         # 연결 최대 수명 30분
       leak-detection-threshold: 60000  # 연결 누수 감지 1분
+      validation-timeout: 5000      # 연결 검증 타임아웃 5초
+      connection-test-query: SELECT 1  # 연결 유효성 검사 쿼리
 
   # H2 Console 비활성화 (Production)
   h2:
