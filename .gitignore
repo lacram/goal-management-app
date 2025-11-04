@@ -23,8 +23,8 @@ logs/
 *.log.*
 *.gz
 
-# Database
-data/
+# Database (backend only)
+backend/data/
 *.db
 *.mv.db
 *.trace.db

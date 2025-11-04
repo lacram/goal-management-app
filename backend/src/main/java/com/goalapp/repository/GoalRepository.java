@@ -132,4 +132,25 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     @EntityGraph(attributePaths = {"subGoals"})
     @Query("SELECT g FROM Goal g WHERE g.status = 'COMPLETED' AND g.completedAt < :deleteThreshold")
     List<Goal> findOldCompletedGoals(@Param("deleteThreshold") LocalDateTime deleteThreshold);
+
+    // ===== 성능 최적화: 상태 변경 전용 메서드 =====
+
+    // 목표 완료 처리 - EntityGraph 없이 직접 업데이트 (빠른 성능)
+    @Query("UPDATE Goal g SET g.isCompleted = true, g.completedAt = :completedAt, g.status = 'COMPLETED', g.updatedAt = :updatedAt WHERE g.id = :id")
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    int updateGoalAsCompleted(@Param("id") Long id,
+                              @Param("completedAt") LocalDateTime completedAt,
+                              @Param("updatedAt") LocalDateTime updatedAt);
+
+    // 목표 완료 취소 - EntityGraph 없이 직접 업데이트 (빠른 성능)
+    @Query("UPDATE Goal g SET g.isCompleted = false, g.completedAt = null, g.status = 'ACTIVE', g.updatedAt = :updatedAt WHERE g.id = :id")
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    int updateGoalAsIncomplete(@Param("id") Long id,
+                                @Param("updatedAt") LocalDateTime updatedAt);
+
+    // EntityGraph 없이 단순 조회 (완료/취소 후 업데이트된 데이터 반환용)
+    @Query("SELECT g FROM Goal g WHERE g.id = :id")
+    Optional<Goal> findByIdWithoutSubGoals(@Param("id") Long id);
 }

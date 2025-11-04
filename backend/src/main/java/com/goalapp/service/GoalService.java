@@ -103,31 +103,49 @@ public class GoalService {
     }
 
     /**
-     * 목표 완료 처리
+     * 목표 완료 처리 - 최적화된 버전 (EntityGraph 없이 직접 업데이트)
      */
     @Transactional
     public Goal completeGoal(Long goalId) {
-        Goal goal = getGoalById(goalId);
-        goal.markAsCompleted(); // 메서드 사용으로 모든 필드 일관성 있게 설정
-        
-        Goal savedGoal = goalRepository.save(goal);
-        log.info("Goal completed: {}", savedGoal.getTitle());
-        
-        return savedGoal;
+        LocalDateTime now = LocalDateTime.now();
+
+        // 직접 UPDATE 쿼리 실행 (하위 목표 로드 없이 빠르게 처리)
+        int updatedCount = goalRepository.updateGoalAsCompleted(goalId, now, now);
+
+        if (updatedCount == 0) {
+            throw new GoalNotFoundException("Goal not found with id: " + goalId);
+        }
+
+        // 업데이트된 목표 조회 (subGoals 없이)
+        Goal completedGoal = goalRepository.findByIdWithoutSubGoals(goalId)
+                .orElseThrow(() -> new GoalNotFoundException("Goal not found with id: " + goalId));
+
+        log.info("Goal completed (optimized): {}", completedGoal.getTitle());
+
+        return completedGoal;
     }
 
     /**
-     * 목표 완료 취소
+     * 목표 완료 취소 - 최적화된 버전 (EntityGraph 없이 직접 업데이트)
      */
     @Transactional
     public Goal uncompleteGoal(Long goalId) {
-        Goal goal = getGoalById(goalId);
-        goal.markAsIncomplete(); // 메서드 사용으로 모든 필드 일관성 있게 설정
-        
-        Goal savedGoal = goalRepository.save(goal);
-        log.info("Goal uncompleted: {}", savedGoal.getTitle());
-        
-        return savedGoal;
+        LocalDateTime now = LocalDateTime.now();
+
+        // 직접 UPDATE 쿼리 실행 (하위 목표 로드 없이 빠르게 처리)
+        int updatedCount = goalRepository.updateGoalAsIncomplete(goalId, now);
+
+        if (updatedCount == 0) {
+            throw new GoalNotFoundException("Goal not found with id: " + goalId);
+        }
+
+        // 업데이트된 목표 조회 (subGoals 없이)
+        Goal uncompletedGoal = goalRepository.findByIdWithoutSubGoals(goalId)
+                .orElseThrow(() -> new GoalNotFoundException("Goal not found with id: " + goalId));
+
+        log.info("Goal uncompleted (optimized): {}", uncompletedGoal.getTitle());
+
+        return uncompletedGoal;
     }
 
     /**
