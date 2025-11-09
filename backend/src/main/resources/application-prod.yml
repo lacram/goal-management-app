@@ -4,7 +4,7 @@ spring:
   jmx:
     enabled: false  # JMX 비활성화로 메모리 절약
   main:
-    lazy-initialization: false  # 명시적으로 false (startup 시간보다 안정성 우선)
+    lazy-initialization: true  # Lazy 초기화로 메모리 절약 및 빠른 시작
   # Supabase PostgreSQL 설정 - Session Pooler로 변경 (안정성 향상)
   datasource:
     url: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require
@@ -13,7 +13,7 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       # Railway 512MB 환경 최적화 - 메모리 절약 우선
-      maximum-pool-size: 3          # 최대 3개 연결 (메모리 절약)
+      maximum-pool-size: 2          # 최대 2개 연결 (메모리 절약)
       minimum-idle: 1               # 최소 1개 연결 유지
       connection-timeout: 20000     # 연결 대기 20초 (빠른 실패)
       idle-timeout: 300000          # 유휴 연결 5분 후 제거
@@ -54,10 +54,10 @@ server:
   # Tomcat 최적화 (512MB 환경)
   tomcat:
     threads:
-      max: 50          # 최대 스레드 수 제한
-      min-spare: 5     # 최소 스레드 수
-    max-connections: 100  # 최대 연결 수 제한
-    accept-count: 10      # 대기 큐 크기
+      max: 20          # 최대 스레드 수 제한
+      min-spare: 2     # 최소 스레드 수
+    max-connections: 50   # 최대 연결 수 제한
+    accept-count: 5       # 대기 큐 크기
   error:
     include-message: always
     include-stacktrace: never
