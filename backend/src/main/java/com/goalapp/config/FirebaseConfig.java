@@ -16,6 +16,9 @@ import java.util.Base64;
 /**
  * Firebase 초기화 설정
  * firebase-adminsdk.json 파일 또는 환경 변수를 통해 Firebase를 초기화합니다.
+ *
+ * ENABLE_FIREBASE 환경변수로 활성화 여부를 제어합니다 (기본값: false)
+ * 메모리 제약이 있는 환경에서는 비활성화를 권장합니다 (약 50-100MB 절약)
  */
 @Configuration
 @Slf4j
@@ -23,6 +26,16 @@ public class FirebaseConfig {
 
     @PostConstruct
     public void initialize() {
+        // 환경 변수로 Firebase 활성화 여부 확인 (기본값: false)
+        String enableFirebase = System.getenv("ENABLE_FIREBASE");
+        boolean isEnabled = "true".equalsIgnoreCase(enableFirebase);
+
+        if (!isEnabled) {
+            log.warn("⚠️  Firebase is DISABLED (ENABLE_FIREBASE not set to 'true')");
+            log.warn("⚠️  Push notifications will not work. To enable: set ENABLE_FIREBASE=true");
+            return;
+        }
+
         try {
             // 이미 초기화되어 있으면 스킵
             if (!FirebaseApp.getApps().isEmpty()) {

@@ -1,5 +1,6 @@
 package com.goalapp.service;
 
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
@@ -10,11 +11,20 @@ import org.springframework.stereotype.Service;
 /**
  * Firebase Cloud Messaging 서비스
  * 푸시 알림을 전송합니다.
+ *
+ * Firebase가 비활성화된 경우 (ENABLE_FIREBASE=false) 알림 전송을 스킵합니다.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class FcmService {
+
+    /**
+     * Firebase 초기화 여부 확인
+     */
+    private boolean isFirebaseInitialized() {
+        return !FirebaseApp.getApps().isEmpty();
+    }
 
     /**
      * 단일 기기에 푸시 알림 전송
@@ -25,6 +35,11 @@ public class FcmService {
      * @return 전송 성공 여부
      */
     public boolean sendNotification(String fcmToken, String title, String body) {
+        if (!isFirebaseInitialized()) {
+            log.debug("Firebase is not initialized, skipping notification");
+            return false;
+        }
+
         if (fcmToken == null || fcmToken.isEmpty()) {
             log.warn("⚠️ FCM token is null or empty, skipping notification");
             return false;
@@ -60,6 +75,11 @@ public class FcmService {
      */
     public boolean sendNotificationWithData(String fcmToken, String title, String body,
                                            java.util.Map<String, String> data) {
+        if (!isFirebaseInitialized()) {
+            log.debug("Firebase is not initialized, skipping notification");
+            return false;
+        }
+
         if (fcmToken == null || fcmToken.isEmpty()) {
             log.warn("⚠️ FCM token is null or empty, skipping notification");
             return false;
