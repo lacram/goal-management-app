@@ -1,5 +1,10 @@
 # 프로덕션 환경 설정 (Railway + Supabase)
 spring:
+  # 메모리 최적화 설정
+  jmx:
+    enabled: false  # JMX 비활성화로 메모리 절약
+  main:
+    lazy-initialization: false  # 명시적으로 false (startup 시간보다 안정성 우선)
   # Supabase PostgreSQL 설정 - Session Pooler로 변경 (안정성 향상)
   datasource:
     url: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require
@@ -7,9 +12,9 @@ spring:
     password: J8qih0ZWIvnLINZW
     driver-class-name: org.postgresql.Driver
     hikari:
-      # Supabase 무료 플랜 최적화 - 성능과 안정성 균형
-      maximum-pool-size: 5          # 최대 5개 연결 (무료 플랜 안정적 범위)
-      minimum-idle: 2               # 최소 2개 연결 유지 (빠른 응답)
+      # Railway 512MB 환경 최적화 - 메모리 절약 우선
+      maximum-pool-size: 3          # 최대 3개 연결 (메모리 절약)
+      minimum-idle: 1               # 최소 1개 연결 유지
       connection-timeout: 20000     # 연결 대기 20초 (빠른 실패)
       idle-timeout: 300000          # 유휴 연결 5분 후 제거
       max-lifetime: 1800000         # 연결 최대 수명 30분
@@ -35,16 +40,24 @@ spring:
             non_contextual_creation: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
-# 로깅 설정
+# 로깅 설정 (메모리 절약)
 logging:
   level:
+    root: WARN
     com.goalapp: INFO
-    org.springframework.web: WARN
-    org.hibernate.SQL: WARN
+    org.springframework: WARN
+    org.hibernate: WARN
 
 # 서버 설정
 server:
   port: ${PORT:8080}
+  # Tomcat 최적화 (512MB 환경)
+  tomcat:
+    threads:
+      max: 50          # 최대 스레드 수 제한
+      min-spare: 5     # 최소 스레드 수
+    max-connections: 100  # 최대 연결 수 제한
+    accept-count: 10      # 대기 큐 크기
   error:
     include-message: always
     include-stacktrace: never

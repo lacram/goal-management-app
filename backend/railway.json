@@ -5,7 +5,7 @@
     "buildCommand": "./gradlew clean build -x test"
   },
   "deploy": {
-    "startCommand": "java -Dserver.port=$PORT -Dspring.profiles.active=prod -jar build/libs/backend-1.0.0.jar",
+    "startCommand": "java -Xms256m -Xmx384m -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Djava.security.egd=file:/dev/./urandom -Dserver.port=$PORT -Dspring.profiles.active=prod -jar build/libs/backend-1.0.0.jar",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
