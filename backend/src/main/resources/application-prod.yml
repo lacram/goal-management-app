@@ -1,10 +1,31 @@
 # 프로덕션 환경 설정 (Railway + Supabase)
+# EXTREME MEMORY OPTIMIZATION for 512MB Railway Free Tier
+
+# 기능 토글 (메모리 절약)
+features:
+  routines:
+    enabled: false  # Routine 기능 비활성화 (메모리 절약)
+  notifications:
+    enabled: false  # 알림 기능 비활성화 (ENABLE_FIREBASE와 별개)
+
 spring:
   # 메모리 최적화 설정
   jmx:
     enabled: false  # JMX 비활성화로 메모리 절약
   main:
     lazy-initialization: true  # Lazy 초기화로 메모리 절약 및 빠른 시작
+    banner-mode: off  # 배너 비활성화
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.admin.SpringApplicationAdminJmxAutoConfiguration
+      - org.springframework.boot.autoconfigure.jmx.JmxAutoConfiguration
+      - org.springframework.boot.autoconfigure.gson.GsonAutoConfiguration
+  jackson:
+    serialization:
+      INDENT_OUTPUT: false  # JSON 포맷팅 비활성화로 메모리 절약
+  output:
+    ansi:
+      enabled: never  # ANSI 컬러 비활성화
   # Supabase PostgreSQL 설정 - Session Pooler로 변경 (안정성 향상)
   datasource:
     url: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require
@@ -12,32 +33,40 @@ spring:
     password: J8qih0ZWIvnLINZW
     driver-class-name: org.postgresql.Driver
     hikari:
-      # Railway 512MB 환경 최적화 - 메모리 절약 우선
-      maximum-pool-size: 2          # 최대 2개 연결 (메모리 절약)
+      # EXTREME: 단일 사용자 환경 최적화
+      maximum-pool-size: 1          # 최대 1개 연결 (단일 사용자)
       minimum-idle: 1               # 최소 1개 연결 유지
-      connection-timeout: 20000     # 연결 대기 20초 (빠른 실패)
-      idle-timeout: 300000          # 유휴 연결 5분 후 제거
+      connection-timeout: 30000     # 연결 대기 30초
+      idle-timeout: 600000          # 유휴 연결 10분 후 제거
       max-lifetime: 1800000         # 연결 최대 수명 30분
-      leak-detection-threshold: 60000  # 연결 누수 감지 1분
-      validation-timeout: 5000      # 연결 검증 타임아웃 5초
-      connection-test-query: SELECT 1  # 연결 유효성 검사 쿼리
+      leak-detection-threshold: 0   # 연결 누수 감지 비활성화 (메모리 절약)
+      validation-timeout: 3000      # 연결 검증 타임아웃 3초
+      register-mbeans: false        # MBeans 비활성화
 
   # H2 Console 비활성화 (Production)
   h2:
     console:
       enabled: false
 
-  # JPA 설정
+  # JPA 설정 (EXTREME 최적화)
   jpa:
     hibernate:
       ddl-auto: update  # Railway 첫 배포 시 테이블 자동 생성
     show-sql: false
+    open-in-view: false  # OSIV 비활성화로 메모리 절약
     properties:
       hibernate:
         format_sql: false
         jdbc:
           lob:
             non_contextual_creation: true
+          batch_size: 5  # 배치 크기 최소화
+        order_inserts: false  # 정렬 비활성화
+        order_updates: false
+        generate_statistics: false  # 통계 수집 비활성화
+        cache:
+          use_second_level_cache: false  # 2차 캐시 완전 비활성화
+          use_query_cache: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
 # 로깅 설정 (메모리 절약)
@@ -51,13 +80,17 @@ logging:
 # 서버 설정
 server:
   port: ${PORT:8080}
-  # Tomcat 최적화 (512MB 환경)
+  # Tomcat 최적화 (EXTREME: 단일 사용자)
   tomcat:
     threads:
-      max: 20          # 최대 스레드 수 제한
-      min-spare: 2     # 최소 스레드 수
-    max-connections: 50   # 최대 연결 수 제한
-    accept-count: 5       # 대기 큐 크기
+      max: 5           # 최대 5개 스레드 (단일 사용자)
+      min-spare: 1     # 최소 1개 스레드
+    max-connections: 5    # 최대 5개 연결 (단일 사용자)
+    accept-count: 2       # 대기 큐 최소화
+    connection-timeout: 30s  # 연결 타임아웃
+    max-http-form-post-size: 1MB  # POST 크기 제한
+    accesslog:
+      enabled: false  # 액세스 로그 비활성화
   error:
     include-message: always
     include-stacktrace: never

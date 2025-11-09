@@ -22,6 +22,11 @@ import java.util.List;
 @RequestMapping("/api/routines")
 @RequiredArgsConstructor
 @Slf4j
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+    name = "features.routines.enabled",
+    havingValue = "true",
+    matchIfMissing = false  // 기본값: 비활성화
+)
 public class RoutineController {
 
     private final RoutineService routineService;

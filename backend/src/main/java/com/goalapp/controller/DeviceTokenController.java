@@ -22,6 +22,11 @@ import java.util.Optional;
 @RequestMapping("/api/device-tokens")
 @RequiredArgsConstructor
 @Slf4j
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+    name = "features.notifications.enabled",
+    havingValue = "true",
+    matchIfMissing = false  // 기본값: 비활성화 (ENABLE_FIREBASE와 연동)
+)
 public class DeviceTokenController {
 
     private final DeviceTokenRepository deviceTokenRepository;
