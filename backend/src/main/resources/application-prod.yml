@@ -4,9 +4,9 @@
 # 기능 토글 (메모리 절약)
 features:
   routines:
-    enabled: false  # Routine 기능 비활성화 (메모리 절약)
+    enabled: true   # Routine 기능 활성화 (사용자 요청)
   notifications:
-    enabled: false  # 알림 기능 비활성화 (ENABLE_FIREBASE와 별개)
+    enabled: false  # 알림 기능 비활성화 (메모리 절약)
 
 spring:
   # 메모리 최적화 설정
@@ -60,13 +60,16 @@ spring:
         jdbc:
           lob:
             non_contextual_creation: true
-          batch_size: 5  # 배치 크기 최소화
+          batch_size: 1  # 배치 완전 비활성화 (메모리 최소화)
         order_inserts: false  # 정렬 비활성화
         order_updates: false
         generate_statistics: false  # 통계 수집 비활성화
+        use_sql_comments: false  # SQL 주석 비활성화
+        auto_quote_keyword: false  # 키워드 자동 인용 비활성화
         cache:
           use_second_level_cache: false  # 2차 캐시 완전 비활성화
           use_query_cache: false
+          use_structured_entries: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
 # 로깅 설정 (메모리 절약)
@@ -83,12 +86,13 @@ server:
   # Tomcat 최적화 (EXTREME: 단일 사용자)
   tomcat:
     threads:
-      max: 5           # 최대 5개 스레드 (단일 사용자)
+      max: 3           # 최대 3개 스레드 (극한 최소화)
       min-spare: 1     # 최소 1개 스레드
-    max-connections: 5    # 최대 5개 연결 (단일 사용자)
-    accept-count: 2       # 대기 큐 최소화
+    max-connections: 3    # 최대 3개 연결 (극한 최소화)
+    accept-count: 1       # 대기 큐 최소화
     connection-timeout: 30s  # 연결 타임아웃
-    max-http-form-post-size: 1MB  # POST 크기 제한
+    max-http-form-post-size: 512KB  # POST 크기 제한 (더 축소)
+    max-swallow-size: 512KB  # Swallow 크기 제한
     accesslog:
       enabled: false  # 액세스 로그 비활성화
   error:
