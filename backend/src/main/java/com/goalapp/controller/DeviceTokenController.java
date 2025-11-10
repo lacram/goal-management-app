@@ -27,6 +27,7 @@ import java.util.Optional;
     havingValue = "true",
     matchIfMissing = false  // 기본값: 비활성화 (ENABLE_FIREBASE와 연동)
 )
+@org.springframework.boot.autoconfigure.condition.ConditionalOnBean(com.goalapp.service.FcmService.class)
 public class DeviceTokenController {
 
     private final DeviceTokenRepository deviceTokenRepository;

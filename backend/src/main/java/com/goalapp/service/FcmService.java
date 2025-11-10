@@ -13,10 +13,12 @@ import org.springframework.stereotype.Service;
  * 푸시 알림을 전송합니다.
  *
  * Firebase가 비활성화된 경우 (ENABLE_FIREBASE=false) 알림 전송을 스킵합니다.
+ * Firebase SDK가 클래스패스에 없으면 이 서비스는 로드되지 않습니다.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@org.springframework.boot.autoconfigure.condition.ConditionalOnClass(name = "com.google.firebase.FirebaseApp")
 public class FcmService {
 
     /**

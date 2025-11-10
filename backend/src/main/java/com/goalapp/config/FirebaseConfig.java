@@ -19,9 +19,12 @@ import java.util.Base64;
  *
  * ENABLE_FIREBASE 환경변수로 활성화 여부를 제어합니다 (기본값: false)
  * 메모리 제약이 있는 환경에서는 비활성화를 권장합니다 (약 50-100MB 절약)
+ *
+ * Firebase SDK가 클래스패스에 없으면 이 설정은 로드되지 않습니다.
  */
 @Configuration
 @Slf4j
+@org.springframework.boot.autoconfigure.condition.ConditionalOnClass(name = "com.google.firebase.FirebaseApp")
 public class FirebaseConfig {
 
     @PostConstruct

@@ -5,7 +5,7 @@
     "buildCommand": "./gradlew clean build -x test"
   },
   "deploy": {
-    "startCommand": "java -Xms48m -Xmx200m -XX:+UseSerialGC -XX:MaxMetaspaceSize=64m -XX:ReservedCodeCacheSize=16m -XX:MaxDirectMemorySize=16m -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UseCompressedClassPointers -XX:CompressedClassSpaceSize=32m -Djava.security.egd=file:/dev/./urandom -Dspring.jmx.enabled=false -Dserver.port=$PORT -Dspring.profiles.active=prod -jar build/libs/backend-1.0.0.jar",
+    "startCommand": "java -Xms48m -Xmx180m -Xss256k -XX:+UseSerialGC -XX:MaxMetaspaceSize=56m -XX:ReservedCodeCacheSize=12m -XX:MaxDirectMemorySize=10m -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UseCompressedClassPointers -XX:CompressedClassSpaceSize=24m -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=20 -Djava.security.egd=file:/dev/./urandom -Dspring.jmx.enabled=false -Dserver.port=$PORT -Dspring.profiles.active=prod -jar build/libs/backend-1.0.0.jar",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }

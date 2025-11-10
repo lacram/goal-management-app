@@ -33,8 +33,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
-    // Firebase Admin SDK (heavy ~50MB, disabled by default via ENABLE_FIREBASE env)
-    implementation 'com.google.firebase:firebase-admin:9.2.0'
+    // Firebase Admin SDK - REMOVED to save memory
+    // Uncomment only if notifications are absolutely required
+    // implementation 'com.google.firebase:firebase-admin:9.2.0'
 
     // Database (production only)
     runtimeOnly 'org.postgresql:postgresql'
