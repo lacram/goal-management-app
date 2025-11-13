@@ -1,8 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiEndpoints {
-  // 기본 프로덕션 URL (Railway)
-  static const String defaultProdBaseUrl = 'https://goal-management-app-production.up.railway.app/api';
+  // 기본 프로덕션 URL (Render)
+  static const String defaultProdBaseUrl = 'https://goal-management-app.onrender.com/api';
   // 기본 개발용 URL (로컬 서버)
   static const String defaultDevBaseUrl = 'http://192.168.0.11:8080/api';
   // localhost URL (Windows 데스크톱)
