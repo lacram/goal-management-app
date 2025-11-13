@@ -38,7 +38,18 @@
       "Bash(.gradlew.bat clean build -x test)",
       "Bash(Select-String \"error -\")",
       "Bash(Select-Object -First 20)",
-      "Bash(flutter run -d windows --dart-define=ENV=local)"
+      "Bash(flutter run -d windows --dart-define=ENV=local)",
+      "Bash(xcopy /E /I /Y \"C:\\workspace\\goal-management-app\\backend\\gradle\" \"C:\\workspace\\expiration-tracker-app\\backend\\gradle\")",
+      "Bash(copy \"C:\\workspace\\goal-management-app\\backend\\gradlew\" \"C:\\workspace\\expiration-tracker-app\\backend\\gradlew\")",
+      "Bash(copy \"C:\\workspace\\goal-management-app\\backend\\gradlew.bat\" \"C:\\workspace\\expiration-tracker-app\\backend\\gradlew.bat\")",
+      "Bash(flutter create frontend)",
+      "Bash(flutter create \"C:\\workspace\\expiration-tracker-app\\frontend\")",
+      "Read(//c/workspace/expiration-tracker-app/frontend/**)",
+      "Bash($null)",
+      "WebSearch",
+      "WebFetch(domain:docs.railway.com)",
+      "Bash(Select-String -Pattern \"unused_local_variable|error\")",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

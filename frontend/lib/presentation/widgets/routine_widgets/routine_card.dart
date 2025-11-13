@@ -103,7 +103,7 @@ class RoutineCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 루틴 제목
+        // 루틴 제목 - 전체 텍스트 표시
         Text(
           routine.title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -115,11 +115,9 @@ class RoutineCard extends StatelessWidget {
                     ? AppColors.textSecondaryColor
                     : AppColors.textPrimaryColor,
               ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
 
-        // 루틴 설명 (있는 경우)
+        // 루틴 설명 (있는 경우) - 전체 텍스트 표시
         if (routine.description != null && routine.description!.isNotEmpty) ...[
           const SizedBox(height: 4),
           Text(
@@ -130,8 +128,6 @@ class RoutineCard extends StatelessWidget {
                       ? TextDecoration.lineThrough
                       : null,
                 ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
 
@@ -174,22 +170,44 @@ class RoutineCard extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert),
+      iconColor: AppColors.textSecondaryColor,
+      onSelected: (value) {
+        switch (value) {
+          case 'edit':
+            onEdit?.call();
+            break;
+          case 'delete':
+            onDelete?.call();
+            break;
+        }
+      },
+      itemBuilder: (context) => [
         if (onEdit != null)
-          IconButton(
-            icon: const Icon(Icons.edit, size: 20),
-            color: AppColors.textSecondaryColor,
-            onPressed: onEdit,
-            tooltip: AppStrings.edit,
+          PopupMenuItem<String>(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(Icons.edit, size: 20, color: AppColors.textSecondaryColor),
+                const SizedBox(width: AppSizes.paddingSmall),
+                Text(AppStrings.edit),
+              ],
+            ),
           ),
         if (onDelete != null)
-          IconButton(
-            icon: const Icon(Icons.delete, size: 20),
-            color: AppColors.errorColor,
-            onPressed: onDelete,
-            tooltip: AppStrings.delete,
+          PopupMenuItem<String>(
+            value: 'delete',
+            child: Row(
+              children: [
+                Icon(Icons.delete, size: 20, color: AppColors.errorColor),
+                const SizedBox(width: AppSizes.paddingSmall),
+                Text(
+                  AppStrings.delete,
+                  style: TextStyle(color: AppColors.errorColor),
+                ),
+              ],
+            ),
           ),
       ],
     );

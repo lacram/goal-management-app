@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: goal-management-backend
+    env: docker  # Docker 사용
+    region: singapore  # 가장 가까운 리전 (서울 없음)
+    plan: free  # 무료 티어
+    dockerfilePath: ./Dockerfile  # Dockerfile 경로
+    dockerContext: ./  # Docker 빌드 컨텍스트
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DATABASE_URL
+        value: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require
+      - key: DB_USERNAME
+        value: postgres.porszbvzgosxurnhrchp
+      - key: DB_PASSWORD
+        sync: false  # 환경 변수로 수동 설정 (보안)
