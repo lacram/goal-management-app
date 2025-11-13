@@ -5,7 +5,7 @@ FROM gradle:8.5-jdk21-alpine AS builder
 WORKDIR /app
 
 # Copy Gradle files first (for caching)
-COPY build.gradle settings.gradle ./
+COPY build.gradle ./
 COPY gradle ./gradle
 COPY gradlew ./
 
