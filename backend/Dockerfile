@@ -28,18 +28,14 @@ COPY --from=builder /app/build/libs/*.jar app.jar
 # Expose port (Render provides $PORT)
 EXPOSE 8080
 
-# Memory-optimized JVM options for 512MB RAM
-ENV JAVA_OPTS="-Xms48m -Xmx180m -Xss256k \
+# Memory-optimized JVM options for Render 512MB RAM
+ENV JAVA_OPTS="-Xms64m -Xmx256m -Xss512k \
     -XX:+UseSerialGC \
-    -XX:MaxMetaspaceSize=56m \
-    -XX:ReservedCodeCacheSize=12m \
+    -XX:MaxMetaspaceSize=128m \
+    -XX:ReservedCodeCacheSize=32m \
     -XX:MaxDirectMemorySize=10m \
-    -XX:+TieredCompilation \
-    -XX:TieredStopAtLevel=1 \
-    -XX:+UseStringDeduplication \
     -XX:+UseCompressedOops \
     -XX:+UseCompressedClassPointers \
-    -XX:CompressedClassSpaceSize=24m \
     -XX:MinHeapFreeRatio=10 \
     -XX:MaxHeapFreeRatio=20 \
     -Djava.security.egd=file:/dev/./urandom \
