@@ -4,19 +4,14 @@ FROM gradle:8.5-jdk21-alpine AS builder
 
 WORKDIR /app
 
-# Copy Gradle files first (for caching)
-COPY build.gradle ./
-COPY gradle ./gradle
-COPY gradlew ./
+# Copy all project files
+COPY . .
 
-# Download dependencies (cached layer)
-RUN ./gradlew dependencies --no-daemon || return 0
+# Make gradlew executable (fix permission issue)
+RUN chmod +x gradlew || true
 
-# Copy source code
-COPY src ./src
-
-# Build application (skip tests for faster build)
-RUN ./gradlew clean build -x test --no-daemon
+# Build using gradle command directly (more reliable than gradlew in Docker)
+RUN gradle clean build -x test --no-daemon --stacktrace
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
@@ -28,7 +23,7 @@ RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 
 # Copy JAR from builder stage
-COPY --from=builder /app/build/libs/backend-1.0.0.jar app.jar
+COPY --from=builder /app/build/libs/*.jar app.jar
 
 # Expose port (Render provides $PORT)
 EXPOSE 8080
