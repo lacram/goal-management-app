@@ -15,4 +15,9 @@ public class RootController {
     public ResponseEntity<String> root() {
         return ResponseEntity.ok("OK");
     }
+
+    @RequestMapping(value = "/favicon.ico", method = {RequestMethod.GET, RequestMethod.HEAD})
+    public ResponseEntity<Void> favicon() {
+        return ResponseEntity.noContent().build();
+    }
 }
