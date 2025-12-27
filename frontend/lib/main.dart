@@ -1,7 +1,8 @@
-                                                                                                                                                import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme/app_theme_complete.dart';
 import 'core/services/app_logger.dart';
 import 'core/services/fcm_service.dart';
@@ -25,6 +26,9 @@ void main() async {
   final baseUrl = ApiEndpoints.goals.split('/goals').first;
   logger.info('App', '실행 환경: $environment');
   logger.info('App', '서버 URL: $baseUrl');
+
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('widget_base_url', baseUrl);
 
   // Firebase 초기화
   try {
