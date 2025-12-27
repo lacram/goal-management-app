@@ -9,7 +9,7 @@ class ApiEndpoints {
   static const String localhostUrl = 'http://localhost:8080/api';
 
   // 빌드 타임에 환경 설정 (flutter run --dart-define=ENV=prod|dev|local)
-  static const String buildEnvironment = String.fromEnvironment('ENV', defaultValue: 'dev');
+  static const String buildEnvironment = String.fromEnvironment('ENV', defaultValue: 'prod');
 
   // 저장된 서버 URL 가져오기
   static Future<String> getBaseUrl() async {
